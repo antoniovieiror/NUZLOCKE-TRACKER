@@ -4,6 +4,11 @@ export type LeagueStatus = 'active' | 'closed'
 export type MatchStatus = 'pending' | 'validated' | 'disputed' | 'voided' | 'admin_resolved'
 export type Vote = 'win_a' | 'win_b'
 
+export interface PokemonEntry {
+  species: string   // lowercase PokéAPI name, e.g. "charizard"
+  nickname: string  // player-set nickname, e.g. "Blaze"
+}
+
 export interface Profile {
   id: string
   username: string
@@ -12,8 +17,8 @@ export interface Profile {
   badges: number
   deaths: number
   wipes: number
-  team: string[]
-  box: string[]
+  team: PokemonEntry[]
+  box: PokemonEntry[]
   mvp: string | null
   notes: string | null
   avatar_url: string | null

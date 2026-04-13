@@ -6,11 +6,12 @@ import { createClient } from '@/lib/supabase/server'
 import { cn } from '@/lib/utils'
 import type { Profile, LeaderboardEntry } from '@/lib/types'
 
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 
+import { AvatarUpload } from './_components/avatar-upload'
+import { UsernameEditor } from './_components/username-editor'
 import { EditStateDialog } from './_components/edit-state-dialog'
 import { PokemonSection } from './_components/pokemon-section'
 
@@ -31,9 +32,7 @@ function StatCard({
 }) {
   return (
     <Card className="overflow-hidden shadow-sm transition-all duration-200 hover:shadow-md hover:-translate-y-0.5">
-      {borderColor && (
-        <div className={cn('h-0.5 w-full', borderColor)} />
-      )}
+      {borderColor && <div className={cn('h-0.5 w-full', borderColor)} />}
       <CardContent className="pt-4 pb-4 px-5">
         <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide mb-1">
           {label}
@@ -56,18 +55,14 @@ function GymBadges({ count }: { count: number }) {
           className={cn(
             'w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all duration-200',
             i < count
-              ? 'bg-amber-400 border-amber-500 dark:bg-amber-500 dark:border-amber-400 shadow-md shadow-amber-400/40 dark:shadow-amber-500/30 scale-100'
+              ? 'bg-amber-400 border-amber-500 dark:bg-amber-500 dark:border-amber-400 shadow-md shadow-amber-400/40 dark:shadow-amber-500/30'
               : 'bg-muted border-border opacity-40'
           )}
         >
-          {i < count && (
-            <span className="text-[8px] font-bold text-amber-900">✦</span>
-          )}
+          {i < count && <span className="text-[8px] font-bold text-amber-900">✦</span>}
         </div>
       ))}
-      <span className="text-sm text-muted-foreground ml-1 self-center">
-        {count}/8
-      </span>
+      <span className="text-sm text-muted-foreground ml-1 self-center">{count}/8</span>
     </div>
   )
 }
@@ -82,7 +77,6 @@ export default async function ProfilePage({
   const { id } = await params
   const supabase = await createClient()
 
-  // Parallel fetches: profile data + this player's leaderboard stats + current user
   const [profileResult, statsResult, userResult] = await Promise.all([
     supabase.from('profiles').select('*').eq('id', id).single(),
     supabase.from('leaderboard').select('*').eq('id', id).single(),
@@ -95,7 +89,6 @@ export default async function ProfilePage({
   const stats = statsResult.data as LeaderboardEntry | null
   const currentUser = userResult.data.user
 
-  // Fetch current user's role to determine edit permission
   let currentUserRole: 'admin' | 'player' = 'player'
   if (currentUser) {
     const { data: currentProfile } = await supabase
@@ -106,10 +99,7 @@ export default async function ProfilePage({
     currentUserRole = currentProfile?.role ?? 'player'
   }
 
-  const canEdit =
-    !!currentUser &&
-    (currentUser.id === profile.id || currentUserRole === 'admin')
-
+  const canEdit = !!currentUser && (currentUser.id === profile.id || currentUserRole === 'admin')
   const isOwnProfile = currentUser?.id === profile.id
 
   return (
@@ -124,26 +114,30 @@ export default async function ProfilePage({
         Clasificación
       </Link>
 
-      {/* ── Profile header — gradient trainer card ── */}
+      {/* ── Profile header ── */}
       <div className="relative rounded-2xl overflow-hidden border border-border/50 bg-gradient-to-br from-violet-50 via-sky-50/50 to-emerald-50/30 dark:from-indigo-950/60 dark:via-blue-950/40 dark:to-slate-900/60 p-5 shadow-sm">
-        {/* Decorative gradient orb */}
         <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
           <div className="absolute -top-10 -right-10 h-40 w-40 rounded-full bg-amber-300/10 dark:bg-amber-500/5 blur-2xl" />
         </div>
 
         <div className="relative flex flex-col sm:flex-row sm:items-center gap-4">
-          <Avatar className="h-20 w-20 shrink-0 ring-4 ring-white/80 dark:ring-white/10 shadow-lg">
-            <AvatarImage src={profile.avatar_url ?? undefined} alt={profile.username} />
-            <AvatarFallback className="text-2xl font-bold bg-gradient-to-br from-violet-100 to-sky-100 dark:from-indigo-900 dark:to-blue-900 text-violet-700 dark:text-violet-300">
-              {profile.username.slice(0, 2).toUpperCase()}
-            </AvatarFallback>
-          </Avatar>
+          {/* Avatar — client component handles upload */}
+          <AvatarUpload
+            profileId={profile.id}
+            avatarUrl={profile.avatar_url}
+            username={profile.username}
+            canEdit={canEdit}
+          />
 
           <div className="flex-1 min-w-0">
             <div className="flex flex-wrap items-center gap-2 mb-1">
-              <h1 className="text-2xl font-bold tracking-tight truncate">
-                {profile.username}
-              </h1>
+              {/* Username — client component handles inline edit */}
+              <UsernameEditor
+                profileId={profile.id}
+                initialUsername={profile.username}
+                canEdit={canEdit}
+              />
+
               {profile.role === 'admin' && (
                 <Badge variant="secondary" className="gap-1">
                   <Shield className="h-3 w-3" />
@@ -205,10 +199,10 @@ export default async function ProfilePage({
         />
       </div>
 
-      {/* ── Main content: Nuzlocke state + Pokémon ── */}
+      {/* ── Main content ── */}
       <div className="grid grid-cols-1 lg:grid-cols-[340px_1fr] gap-4">
 
-        {/* Left: Nuzlocke state card */}
+        {/* Nuzlocke state card */}
         <Card className="self-start">
           <CardHeader className="pb-3 flex flex-row items-center justify-between gap-2">
             <CardTitle className="text-base">Estado Nuzlocke</CardTitle>
@@ -243,14 +237,10 @@ export default async function ProfilePage({
                 <Skull className="h-4 w-4 text-muted-foreground" />
                 Muertes
               </div>
-              <span
-                className={cn(
-                  'text-lg font-bold tabular-nums',
-                  profile.deaths > 0
-                    ? 'text-red-500 dark:text-red-400'
-                    : 'text-muted-foreground'
-                )}
-              >
+              <span className={cn(
+                'text-lg font-bold tabular-nums',
+                profile.deaths > 0 ? 'text-red-500 dark:text-red-400' : 'text-muted-foreground'
+              )}>
                 {profile.deaths}
               </span>
             </div>
@@ -263,14 +253,10 @@ export default async function ProfilePage({
                 <Zap className="h-4 w-4 text-muted-foreground" />
                 Wipes
               </div>
-              <span
-                className={cn(
-                  'text-lg font-bold tabular-nums',
-                  profile.wipes > 0
-                    ? 'text-orange-500 dark:text-orange-400'
-                    : 'text-muted-foreground'
-                )}
-              >
+              <span className={cn(
+                'text-lg font-bold tabular-nums',
+                profile.wipes > 0 ? 'text-orange-500 dark:text-orange-400' : 'text-muted-foreground'
+              )}>
                 {profile.wipes}
               </span>
             </div>
@@ -310,7 +296,7 @@ export default async function ProfilePage({
           </CardContent>
         </Card>
 
-        {/* Right: Team + Box */}
+        {/* Team + Box */}
         <PokemonSection
           profileId={profile.id}
           initialTeam={profile.team}
