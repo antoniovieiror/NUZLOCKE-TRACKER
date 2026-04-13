@@ -82,6 +82,36 @@ export async function setUserPassword(userId: string, newPassword: string) {
   return { success: true }
 }
 
+export async function deletePlayer(userId: string) {
+  const { supabase, error: authError } = await assertAdmin()
+  if (authError || !supabase) return { error: authError ?? 'Not authenticated' }
+
+  // Prevent self-deletion
+  const { data: { user: me } } = await supabase.auth.getUser()
+  if (me?.id === userId) return { error: 'No puedes eliminarte a ti mismo' }
+
+  // Prevent deleting another admin
+  const { data: target } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', userId)
+    .single()
+  if (target?.role === 'admin') return { error: 'No se puede eliminar una cuenta de admin' }
+
+  try {
+    const adminClient = createAdminClient()
+    // Deleting from auth.users cascades to profiles via FK
+    const { error } = await adminClient.auth.admin.deleteUser(userId)
+    if (error) return { error: error.message }
+  } catch (e) {
+    return { error: String(e) }
+  }
+
+  revalidatePath('/admin')
+  revalidatePath('/')
+  return { success: true }
+}
+
 // ─── League management ────────────────────────────────────────────────────────
 
 export async function createLeague(title: string) {

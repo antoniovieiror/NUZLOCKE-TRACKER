@@ -2,13 +2,13 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus, Loader2, KeyRound, UserCheck, UserX } from 'lucide-react'
+import { Plus, Loader2, KeyRound, UserCheck, UserX, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { z } from 'zod'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 
-import { createPlayer, toggleUserStatus, setUserPassword } from '@/lib/actions/admin'
+import { createPlayer, toggleUserStatus, setUserPassword, deletePlayer } from '@/lib/actions/admin'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -55,6 +55,7 @@ export function UsersPanel({ users, currentUserId }: UsersPanelProps) {
   const router = useRouter()
   const [createOpen, setCreateOpen] = useState(false)
   const [pwTarget, setPwTarget] = useState<UserRow | null>(null)
+  const [deleteTarget, setDeleteTarget] = useState<UserRow | null>(null)
   const [isPending, startTransition] = useTransition()
 
   const createForm = useForm<CreateFormValues>({
@@ -92,6 +93,20 @@ export function UsersPanel({ users, currentUserId }: UsersPanelProps) {
       })
       createForm.reset()
       setCreateOpen(false)
+      router.refresh()
+    })
+  }
+
+  function handleDeletePlayer() {
+    if (!deleteTarget) return
+    startTransition(async () => {
+      const result = await deletePlayer(deleteTarget.id)
+      if (result.error) {
+        toast.error('Error al eliminar jugador', { description: String(result.error) })
+        return
+      }
+      toast.success(`"${deleteTarget.username}" eliminado`)
+      setDeleteTarget(null)
       router.refresh()
     })
   }
@@ -178,7 +193,7 @@ export function UsersPanel({ users, currentUserId }: UsersPanelProps) {
                     <Button
                       variant="ghost"
                       size="icon-sm"
-                      title="Set password"
+                      title="Cambiar contraseña"
                       onClick={() => {
                         pwForm.reset()
                         setPwTarget(user)
@@ -187,19 +202,32 @@ export function UsersPanel({ users, currentUserId }: UsersPanelProps) {
                       <KeyRound className="h-3.5 w-3.5" />
                     </Button>
                     {!isMe && (
-                      <Button
-                        variant="ghost"
-                        size="icon-sm"
-                        disabled={isPending}
-                        title={user.status === 'active' ? 'Deactivate player' : 'Activate player'}
-                        onClick={() => handleToggleStatus(user)}
-                      >
-                        {user.status === 'active' ? (
-                          <UserX className="h-3.5 w-3.5 text-muted-foreground" />
-                        ) : (
-                          <UserCheck className="h-3.5 w-3.5 text-green-500" />
+                      <>
+                        <Button
+                          variant="ghost"
+                          size="icon-sm"
+                          disabled={isPending}
+                          title={user.status === 'active' ? 'Desactivar jugador' : 'Activar jugador'}
+                          onClick={() => handleToggleStatus(user)}
+                        >
+                          {user.status === 'active' ? (
+                            <UserX className="h-3.5 w-3.5 text-muted-foreground" />
+                          ) : (
+                            <UserCheck className="h-3.5 w-3.5 text-green-500" />
+                          )}
+                        </Button>
+                        {user.role !== 'admin' && (
+                          <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            disabled={isPending}
+                            title="Eliminar jugador"
+                            onClick={() => setDeleteTarget(user)}
+                          >
+                            <Trash2 className="h-3.5 w-3.5 text-destructive/70 hover:text-destructive" />
+                          </Button>
                         )}
-                      </Button>
+                      </>
                     )}
                   </div>
                 </CardContent>
@@ -300,6 +328,41 @@ export function UsersPanel({ users, currentUserId }: UsersPanelProps) {
               </Button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Delete Player Dialog ── */}
+      <Dialog
+        open={!!deleteTarget}
+        onOpenChange={(open) => { if (!open) setDeleteTarget(null) }}
+      >
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Eliminar jugador</DialogTitle>
+            <DialogDescription>
+              ¿Estás seguro de que quieres eliminar la cuenta de{' '}
+              <strong>{deleteTarget?.username}</strong>? Esta acción es{' '}
+              <strong>permanente e irreversible</strong>. Se borrarán todos sus
+              datos de perfil.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="pt-2">
+            <Button
+              variant="ghost"
+              onClick={() => setDeleteTarget(null)}
+              disabled={isPending}
+            >
+              Cancelar
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDeletePlayer}
+              disabled={isPending}
+            >
+              {isPending && <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />}
+              Sí, eliminar
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
