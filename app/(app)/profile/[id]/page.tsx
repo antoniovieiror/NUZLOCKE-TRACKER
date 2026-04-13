@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { ChevronLeft, Skull, Shield, Zap } from 'lucide-react'
+import { ChevronLeft, Skull, Shield, Zap, Star } from 'lucide-react'
 
 import { createClient } from '@/lib/supabase/server'
 import { cn } from '@/lib/utils'
@@ -23,23 +23,23 @@ function StatCard({
   value,
   sub,
   accent,
-  borderColor,
+  accentBar,
 }: {
   label: string
   value: string | number
   sub?: string
   accent?: string
-  borderColor?: string
+  accentBar?: string
 }) {
   return (
     <Card className="overflow-hidden shadow-sm transition-all duration-200 hover:shadow-md hover:-translate-y-0.5">
-      {borderColor && <div className={cn('h-0.5 w-full', borderColor)} />}
+      {accentBar && <div className={cn('h-0.5 w-full', accentBar)} />}
       <CardContent className="pt-4 pb-4 px-5">
-        <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide mb-1">
+        <p className="text-[10px] text-muted-foreground font-black uppercase tracking-[0.15em] mb-1">
           {label}
         </p>
-        <p className={cn('text-2xl font-bold tabular-nums', accent)}>{value}</p>
-        {sub && <p className="text-xs text-muted-foreground mt-0.5">{sub}</p>}
+        <p className={cn('text-2xl font-black tabular-nums', accent)}>{value}</p>
+        {sub && <p className="text-xs text-muted-foreground/70 mt-0.5">{sub}</p>}
       </CardContent>
     </Card>
   )
@@ -56,14 +56,16 @@ function GymBadges({ count }: { count: number }) {
           className={cn(
             'w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all duration-200',
             i < count
-              ? 'bg-amber-400 border-amber-500 dark:bg-amber-500 dark:border-amber-400 shadow-md shadow-amber-400/40 dark:shadow-amber-500/30'
-              : 'bg-muted border-border opacity-40'
+              ? 'bg-amber-400 border-amber-500 dark:bg-amber-500 dark:border-amber-400 shadow shadow-amber-400/40 dark:shadow-amber-500/30'
+              : 'bg-muted/60 border-border/60 opacity-35'
           )}
         >
-          {i < count && <span className="text-[8px] font-bold text-amber-900">✦</span>}
+          {i < count && (
+            <Star className="h-2.5 w-2.5 text-amber-900 fill-amber-900" strokeWidth={0} />
+          )}
         </div>
       ))}
-      <span className="text-sm text-muted-foreground ml-1 self-center">{count}/12</span>
+      <span className="text-xs text-muted-foreground ml-1 self-center tabular-nums">{count}/12</span>
     </div>
   )
 }
@@ -116,13 +118,15 @@ export default async function ProfilePage({
       </Link>
 
       {/* ── Profile header ── */}
-      <div className="relative rounded-2xl overflow-hidden border border-border/50 bg-gradient-to-br from-violet-50 via-sky-50/50 to-emerald-50/30 dark:from-indigo-950/60 dark:via-blue-950/40 dark:to-slate-900/60 p-5 shadow-sm">
-        <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
-          <div className="absolute -top-10 -right-10 h-40 w-40 rounded-full bg-amber-300/10 dark:bg-amber-500/5 blur-2xl" />
+      <div className="relative rounded-2xl overflow-hidden border border-border/50 bg-gradient-to-br from-slate-50 via-blue-50/40 to-indigo-50/30 dark:from-slate-900/80 dark:via-blue-950/40 dark:to-indigo-950/30 p-6 shadow-sm">
+        {/* Topographic accent */}
+        <div className="pointer-events-none absolute inset-0 overflow-hidden opacity-30 dark:opacity-100" aria-hidden>
+          <div className="absolute -top-8 -right-8 h-48 w-48 rounded-full bg-amber-300/8 dark:bg-amber-500/5 blur-3xl" />
+          <div className="absolute -bottom-4 -left-4 h-32 w-32 rounded-full bg-blue-300/10 dark:bg-blue-500/5 blur-2xl" />
         </div>
 
-        <div className="relative flex flex-col sm:flex-row sm:items-center gap-4">
-          {/* Avatar — client component handles upload */}
+        <div className="relative flex flex-col sm:flex-row sm:items-center gap-5">
+          {/* Avatar */}
           <AvatarUpload
             profileId={profile.id}
             avatarUrl={profile.avatar_url}
@@ -131,8 +135,7 @@ export default async function ProfilePage({
           />
 
           <div className="flex-1 min-w-0">
-            <div className="flex flex-wrap items-center gap-2 mb-1">
-              {/* Username — client component handles inline edit */}
+            <div className="flex flex-wrap items-center gap-2 mb-1.5">
               <UsernameEditor
                 profileId={profile.id}
                 initialUsername={profile.username}
@@ -140,18 +143,18 @@ export default async function ProfilePage({
               />
 
               {profile.role === 'admin' && (
-                <Badge variant="secondary" className="gap-1">
+                <Badge variant="secondary" className="gap-1 text-xs">
                   <Shield className="h-3 w-3" />
                   Admin
                 </Badge>
               )}
               {profile.status === 'inactive' && (
-                <Badge variant="outline" className="text-muted-foreground">
+                <Badge variant="outline" className="text-muted-foreground text-xs">
                   Inactivo
                 </Badge>
               )}
               {isOwnProfile && (
-                <Badge variant="outline" className="text-muted-foreground">
+                <Badge variant="outline" className="text-muted-foreground/60 text-xs">
                   Tú
                 </Badge>
               )}
@@ -174,29 +177,29 @@ export default async function ProfilePage({
           value={stats?.total_points ?? 0}
           sub="en todas las ligas"
           accent="text-amber-600 dark:text-amber-400"
-          borderColor="bg-gradient-to-r from-amber-400 to-amber-500"
+          accentBar="bg-gradient-to-r from-amber-400 to-amber-500"
         />
         <StatCard
           label="Victorias"
           value={stats?.total_wins ?? 0}
           accent="text-green-600 dark:text-green-400"
-          borderColor="bg-gradient-to-r from-green-400 to-emerald-500"
+          accentBar="bg-gradient-to-r from-green-400 to-emerald-500"
         />
         <StatCard
           label="Derrotas"
           value={stats?.total_losses ?? 0}
           accent="text-red-500 dark:text-red-400"
-          borderColor="bg-gradient-to-r from-red-400 to-rose-500"
+          accentBar="bg-gradient-to-r from-red-400 to-rose-500"
         />
         <StatCard
           label="% Victorias"
           value={`${Number(stats?.winrate ?? 0).toFixed(1)}%`}
           sub={
             (stats?.total_wins ?? 0) + (stats?.total_losses ?? 0) > 0
-              ? `${(stats?.total_wins ?? 0) + (stats?.total_losses ?? 0)} partidas jugadas`
+              ? `${(stats?.total_wins ?? 0) + (stats?.total_losses ?? 0)} partidas`
               : 'Sin partidas aún'
           }
-          borderColor="bg-gradient-to-r from-violet-400 to-blue-500"
+          accentBar="bg-gradient-to-r from-violet-400 to-blue-500"
         />
       </div>
 
@@ -204,9 +207,9 @@ export default async function ProfilePage({
       <div className="grid grid-cols-1 lg:grid-cols-[340px_1fr] gap-4">
 
         {/* Nuzlocke state card */}
-        <Card className="self-start">
-          <CardHeader className="pb-3 flex flex-row items-center justify-between gap-2">
-            <CardTitle className="text-base">Estado Nuzlocke</CardTitle>
+        <Card className="self-start overflow-hidden">
+          <CardHeader className="pb-3 border-b border-border/40 flex flex-row items-center justify-between gap-2">
+            <CardTitle className="text-sm font-bold">Estado Nuzlocke</CardTitle>
             {canEdit && (
               <EditStateDialog
                 profileId={profile.id}
@@ -220,52 +223,52 @@ export default async function ProfilePage({
             )}
           </CardHeader>
 
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-4 pt-4">
             {/* Gym badges */}
-            <div className="space-y-1.5">
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+            <div className="space-y-2">
+              <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.15em]">
                 Medallas de Gimnasio
               </p>
               <GymBadges count={profile.badges} />
             </div>
 
-            <Separator />
+            <Separator className="opacity-50" />
 
             {/* Deaths */}
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 text-sm font-medium">
+              <div className="flex items-center gap-2 text-sm font-semibold">
                 <Skull className="h-4 w-4 text-muted-foreground" />
                 Muertes
               </div>
               <span className={cn(
-                'text-lg font-bold tabular-nums',
+                'text-xl font-black tabular-nums',
                 profile.deaths > 0 ? 'text-red-500 dark:text-red-400' : 'text-muted-foreground'
               )}>
                 {profile.deaths}
               </span>
             </div>
 
-            <Separator />
+            <Separator className="opacity-50" />
 
             {/* Wipes */}
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 text-sm font-medium">
+              <div className="flex items-center gap-2 text-sm font-semibold">
                 <Zap className="h-4 w-4 text-muted-foreground" />
                 Wipes
               </div>
               <span className={cn(
-                'text-lg font-bold tabular-nums',
+                'text-xl font-black tabular-nums',
                 profile.wipes > 0 ? 'text-orange-500 dark:text-orange-400' : 'text-muted-foreground'
               )}>
                 {profile.wipes}
               </span>
             </div>
 
-            <Separator />
+            <Separator className="opacity-50" />
 
             {/* MVP */}
             <div className="space-y-2">
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+              <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.15em]">
                 MVP
               </p>
               {profile.mvp ? (
@@ -278,19 +281,19 @@ export default async function ProfilePage({
               )}
             </div>
 
-            <Separator />
+            <Separator className="opacity-50" />
 
             {/* Notes */}
-            <div className="space-y-1">
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+            <div className="space-y-1.5">
+              <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.15em]">
                 Notas de la partida
               </p>
               {profile.notes ? (
-                <p className="text-sm leading-relaxed whitespace-pre-wrap break-words">
+                <p className="text-sm leading-relaxed whitespace-pre-wrap break-words text-foreground/80">
                   {profile.notes}
                 </p>
               ) : (
-                <p className="text-sm text-muted-foreground italic">Sin notas todavía.</p>
+                <p className="text-sm text-muted-foreground/60 italic">Sin notas todavía.</p>
               )}
             </div>
           </CardContent>

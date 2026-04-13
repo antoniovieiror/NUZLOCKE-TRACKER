@@ -22,14 +22,23 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   return (
     <div className="relative min-h-screen bg-background">
 
-      {/* ── Ambient gradient — fixed, behind everything ── */}
+      {/* ── Topographic pattern — dark mode only ── */}
+      <div
+        className="pointer-events-none fixed inset-0 -z-20 hidden dark:block topo-lines opacity-100"
+        aria-hidden
+      />
+
+      {/* ── Atmospheric depth layers ── */}
       <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden" aria-hidden>
-        {/* Light mode: soft lavender top, pale teal bottom */}
-        <div className="absolute inset-x-0 top-0 h-[600px] bg-gradient-to-b from-violet-100/40 via-sky-50/20 to-transparent dark:from-indigo-950/60 dark:via-blue-950/20 dark:to-transparent" />
-        <div className="absolute inset-x-0 bottom-0 h-[400px] bg-gradient-to-t from-emerald-50/30 via-transparent to-transparent dark:from-slate-950/60 dark:to-transparent" />
-        {/* Dark mode: deep blue radial glows */}
-        <div className="absolute -top-32 left-1/2 -translate-x-1/2 h-[500px] w-[800px] rounded-full bg-indigo-500/0 dark:bg-indigo-500/5 blur-3xl" />
-        <div className="absolute bottom-0 right-0 h-[400px] w-[600px] rounded-full bg-teal-500/0 dark:bg-teal-500/4 blur-3xl" />
+        {/* Light mode: clean cool gradient */}
+        <div className="absolute inset-x-0 top-0 h-[500px] bg-gradient-to-b from-blue-50/60 via-indigo-50/20 to-transparent dark:from-transparent dark:to-transparent" />
+        <div className="absolute inset-x-0 bottom-0 h-[300px] bg-gradient-to-t from-slate-50/40 to-transparent dark:from-transparent dark:to-transparent" />
+
+        {/* Dark mode: deep radial glows that complement the topo pattern */}
+        <div className="absolute inset-x-0 top-0 h-[600px] bg-gradient-to-b from-blue-950/40 via-indigo-950/15 to-transparent opacity-0 dark:opacity-100" />
+        <div className="absolute -top-20 left-1/2 -translate-x-1/2 h-[400px] w-[900px] rounded-full bg-blue-600/0 dark:bg-blue-600/4 blur-3xl" />
+        <div className="absolute top-1/3 -right-20 h-[500px] w-[500px] rounded-full bg-indigo-500/0 dark:bg-indigo-500/3 blur-3xl" />
+        <div className="absolute bottom-0 left-0 h-[400px] w-[600px] rounded-full bg-violet-500/0 dark:bg-violet-500/3 blur-3xl" />
       </div>
 
       <Navbar user={profile} />

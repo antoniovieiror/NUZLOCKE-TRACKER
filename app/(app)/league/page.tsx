@@ -24,7 +24,7 @@ type PlayerRow = {
   wins: number
   losses: number
   winrate: number
-  streak: number          // positive = win streak, negative = loss streak
+  streak: number
   matchesPlayed: number
 }
 
@@ -50,31 +50,19 @@ function computeStandings(
     })
   }
 
-  // Only count validated / admin_resolved for points; voided = skip
   const resolved = matches.filter(
     (m) => m.status === 'validated' || m.status === 'admin_resolved'
   )
 
   for (const m of resolved) {
     if (!m.winner_id) continue
-    const loserId =
-      m.winner_id === m.player_a_id ? m.player_b_id : m.player_a_id
-
+    const loserId = m.winner_id === m.player_a_id ? m.player_b_id : m.player_a_id
     const winner = map.get(m.winner_id)
     const loser = map.get(loserId)
-
-    if (winner) {
-      winner.points += 2
-      winner.wins += 1
-      winner.matchesPlayed += 1
-    }
-    if (loser) {
-      loser.losses += 1
-      loser.matchesPlayed += 1
-    }
+    if (winner) { winner.points += 2; winner.wins += 1; winner.matchesPlayed += 1 }
+    if (loser) { loser.losses += 1; loser.matchesPlayed += 1 }
   }
 
-  // Winrate
   for (const row of map.values()) {
     row.winrate =
       row.matchesPlayed > 0
@@ -82,7 +70,6 @@ function computeStandings(
         : 0
   }
 
-  // Streak: look at each player's last N resolved matches in chrono order
   const chronoResolved = [...resolved].sort(
     (a, b) => new Date(a.updated_at).getTime() - new Date(b.updated_at).getTime()
   )
@@ -121,7 +108,7 @@ function streakLabel(streak: number) {
   return (
     <span
       className={cn(
-        'text-[10px] font-bold px-1 py-0.5 rounded',
+        'text-[10px] font-black px-1 py-0.5 rounded tracking-wide',
         isWin
           ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300'
           : 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300'
@@ -132,21 +119,49 @@ function streakLabel(streak: number) {
   )
 }
 
+// ─── Rank indicator (no emojis) ────────────────────────────────────────────────
+
+function StandingsRank({ rank }: { rank: number }) {
+  if (rank === 1)
+    return (
+      <span className="inline-flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-black bg-gradient-to-br from-amber-300 to-amber-500 text-amber-950">
+        1
+      </span>
+    )
+  if (rank === 2)
+    return (
+      <span className="inline-flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-black bg-gradient-to-br from-slate-300 to-slate-400 text-slate-800 dark:from-slate-500 dark:to-slate-600 dark:text-slate-100">
+        2
+      </span>
+    )
+  if (rank === 3)
+    return (
+      <span className="inline-flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-black bg-gradient-to-br from-orange-300 to-amber-400 text-orange-950 dark:from-orange-600 dark:to-amber-700 dark:text-orange-100">
+        3
+      </span>
+    )
+  return (
+    <span className="text-xs text-muted-foreground tabular-nums font-medium w-5 text-center">
+      {rank}
+    </span>
+  )
+}
+
 // ─── Status badge ──────────────────────────────────────────────────────────────
 
 function StatusBadge({ status }: { status: Match['status'] }) {
   const cfg = {
-    pending:        { label: 'Pending',   icon: Clock,         cls: 'text-amber-600 bg-amber-50 border-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-800' },
-    validated:      { label: 'Done',      icon: CheckCircle2,  cls: 'text-green-600 bg-green-50 border-green-200 dark:bg-green-950/30 dark:text-green-400 dark:border-green-800' },
-    disputed:       { label: 'Disputed',  icon: AlertCircle,   cls: 'text-red-600 bg-red-50 border-red-200 dark:bg-red-950/30 dark:text-red-400 dark:border-red-800' },
-    voided:         { label: 'Voided',    icon: Ban,           cls: 'text-muted-foreground bg-muted border-border' },
-    admin_resolved: { label: 'Resolved',  icon: Shield,        cls: 'text-blue-600 bg-blue-50 border-blue-200 dark:bg-blue-950/30 dark:text-blue-400 dark:border-blue-800' },
+    pending:        { label: 'Pendiente', icon: Clock,         cls: 'text-amber-700 bg-amber-50 border-amber-200/80 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-800/60' },
+    validated:      { label: 'Validado',  icon: CheckCircle2,  cls: 'text-green-700 bg-green-50 border-green-200/80 dark:bg-green-950/30 dark:text-green-400 dark:border-green-800/60' },
+    disputed:       { label: 'Disputado', icon: AlertCircle,   cls: 'text-red-700 bg-red-50 border-red-200/80 dark:bg-red-950/30 dark:text-red-400 dark:border-red-800/60' },
+    voided:         { label: 'Anulado',   icon: Ban,           cls: 'text-muted-foreground bg-muted/60 border-border/60' },
+    admin_resolved: { label: 'Resuelto',  icon: Shield,        cls: 'text-blue-700 bg-blue-50 border-blue-200/80 dark:bg-blue-950/30 dark:text-blue-400 dark:border-blue-800/60' },
   } as const
 
   const { label, icon: Icon, cls } = cfg[status]
   return (
-    <span className={cn('inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md border text-[11px] font-medium', cls)}>
-      <Icon className="h-3 w-3" />
+    <span className={cn('inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md border text-[10px] font-semibold', cls)}>
+      <Icon className="h-2.5 w-2.5" />
       {label}
     </span>
   )
@@ -157,8 +172,8 @@ function StatusBadge({ status }: { status: Match['status'] }) {
 function VoteDots({ voteA, voteB }: { voteA: Match['vote_a']; voteB: Match['vote_b'] }) {
   return (
     <span className="flex gap-0.5" title={`${voteA ? 'A voted' : 'A pending'} / ${voteB ? 'B voted' : 'B pending'}`}>
-      <span className={cn('w-2 h-2 rounded-full', voteA ? 'bg-foreground' : 'bg-muted-foreground/30')} />
-      <span className={cn('w-2 h-2 rounded-full', voteB ? 'bg-foreground' : 'bg-muted-foreground/30')} />
+      <span className={cn('w-1.5 h-1.5 rounded-full', voteA ? 'bg-foreground' : 'bg-muted-foreground/25')} />
+      <span className={cn('w-1.5 h-1.5 rounded-full', voteB ? 'bg-foreground' : 'bg-muted-foreground/25')} />
     </span>
   )
 }
@@ -193,25 +208,30 @@ function MatchCard({
       className={cn(
         'block rounded-xl border p-3 transition-all duration-200 hover:shadow-md hover:-translate-y-px',
         isParticipant && match.status === 'pending'
-          ? 'border-amber-300/70 bg-amber-50/50 dark:border-amber-700/50 dark:bg-amber-950/25 shadow-sm shadow-amber-100 dark:shadow-amber-900/20'
-          : 'bg-card/80 hover:border-foreground/15',
-        match.status === 'disputed' && 'border-red-300/70 bg-red-50/30 dark:border-red-800/50 dark:bg-red-950/15'
+          ? 'border-amber-300/60 bg-amber-50/40 dark:border-amber-700/40 dark:bg-amber-950/20 shadow-sm'
+          : match.status === 'disputed'
+          ? 'border-red-300/60 bg-red-50/25 dark:border-red-800/40 dark:bg-red-950/12'
+          : 'bg-card/80 border-border/50 hover:border-border'
       )}
     >
       {/* Players row */}
       <div className="flex items-center gap-2">
         {/* Player A */}
         <div className="flex items-center gap-1.5 flex-1 min-w-0">
-          <Avatar className="h-6 w-6 shrink-0">
+          <Avatar className="h-6 w-6 shrink-0 ring-1 ring-border/40">
             <AvatarImage src={playerA.avatar_url ?? undefined} />
-            <AvatarFallback className="text-[10px]">
+            <AvatarFallback className="text-[9px] font-bold">
               {playerA.username.slice(0, 2).toUpperCase()}
             </AvatarFallback>
           </Avatar>
           <span
             className={cn(
-              'text-sm font-medium truncate',
-              match.winner_id === playerA.id && 'text-green-600 dark:text-green-400'
+              'text-sm font-semibold truncate',
+              match.winner_id === playerA.id
+                ? 'text-green-600 dark:text-green-400'
+                : isResolved && match.winner_id !== null
+                ? 'text-muted-foreground/60 line-through decoration-1'
+                : ''
             )}
           >
             {playerA.username}
@@ -219,9 +239,9 @@ function MatchCard({
         </div>
 
         {/* VS / result */}
-        <div className="flex flex-col items-center shrink-0 w-16">
-          <span className="text-[10px] font-bold text-muted-foreground tracking-widest">
-            {isResolved ? (winnerName ? 'WIN' : 'VOID') : 'VS'}
+        <div className="flex flex-col items-center shrink-0 w-14">
+          <span className="text-[9px] font-black text-muted-foreground/60 tracking-[0.2em]">
+            {isResolved ? 'FIN' : 'VS'}
           </span>
           {match.status === 'pending' && (
             <VoteDots voteA={match.vote_a} voteB={match.vote_b} />
@@ -232,15 +252,19 @@ function MatchCard({
         <div className="flex items-center gap-1.5 flex-1 min-w-0 justify-end">
           <span
             className={cn(
-              'text-sm font-medium truncate text-right',
-              match.winner_id === playerB.id && 'text-green-600 dark:text-green-400'
+              'text-sm font-semibold truncate text-right',
+              match.winner_id === playerB.id
+                ? 'text-green-600 dark:text-green-400'
+                : isResolved && match.winner_id !== null
+                ? 'text-muted-foreground/60 line-through decoration-1'
+                : ''
             )}
           >
             {playerB.username}
           </span>
-          <Avatar className="h-6 w-6 shrink-0">
+          <Avatar className="h-6 w-6 shrink-0 ring-1 ring-border/40">
             <AvatarImage src={playerB.avatar_url ?? undefined} />
-            <AvatarFallback className="text-[10px]">
+            <AvatarFallback className="text-[9px] font-bold">
               {playerB.username.slice(0, 2).toUpperCase()}
             </AvatarFallback>
           </Avatar>
@@ -251,8 +275,8 @@ function MatchCard({
       <div className="flex items-center justify-between mt-2">
         <StatusBadge status={match.status} />
         {isParticipant && match.status === 'pending' && (
-          <span className="text-[10px] text-amber-600 dark:text-amber-400 font-medium">
-            Your match
+          <span className="text-[10px] text-amber-600 dark:text-amber-400 font-bold tracking-wide">
+            TU TURNO
           </span>
         )}
       </div>
@@ -267,22 +291,28 @@ function ProgressBar({ done, total }: { done: number; total: number }) {
   const isComplete = pct === 100
 
   return (
-    <div className="space-y-1.5">
-      <div className="flex justify-between text-xs text-muted-foreground">
-        <span className="font-medium">
-          {done} / {total} matches resolved
+    <div className="space-y-2">
+      <div className="flex justify-between items-center text-xs text-muted-foreground">
+        <span className="font-semibold uppercase tracking-wide text-[10px]">
+          Progreso de la liga
         </span>
-        <span className={cn('font-semibold tabular-nums', isComplete ? 'text-green-600 dark:text-green-400' : '')}>
-          {pct}%
-        </span>
+        <div className="flex items-center gap-2">
+          <span>{done} / {total} partidas resueltas</span>
+          <span className={cn(
+            'font-black tabular-nums text-sm',
+            isComplete ? 'text-green-600 dark:text-green-400' : 'text-foreground'
+          )}>
+            {pct}%
+          </span>
+        </div>
       </div>
-      <div className="h-2 rounded-full bg-muted/60 overflow-hidden shadow-inner">
+      <div className="h-1.5 rounded-full bg-muted/50 overflow-hidden">
         <div
           className={cn(
-            'h-full rounded-full transition-all duration-500 ease-out',
+            'h-full rounded-full transition-all duration-700 ease-out',
             isComplete
-              ? 'bg-gradient-to-r from-green-400 to-emerald-500 shadow-sm shadow-green-400/40'
-              : 'bg-gradient-to-r from-amber-400 via-amber-500 to-amber-400 shadow-sm shadow-amber-400/30'
+              ? 'bg-gradient-to-r from-green-400 to-emerald-500'
+              : 'bg-gradient-to-r from-amber-400 to-amber-500'
           )}
           style={{ width: `${pct}%` }}
         />
@@ -296,10 +326,8 @@ function ProgressBar({ done, total }: { done: number; total: number }) {
 export default async function LeaguePage() {
   const supabase = await createClient()
 
-  // Get current user
   const { data: { user: authUser } } = await supabase.auth.getUser()
 
-  // Fetch active league
   const { data: leagueData } = await supabase
     .from('leagues')
     .select('*')
@@ -312,17 +340,19 @@ export default async function LeaguePage() {
     return (
       <div className="space-y-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
-            <Swords className="h-6 w-6 text-muted-foreground shrink-0" />
-            Active League
-          </h1>
-          <p className="text-sm text-muted-foreground mt-1">Current round standings and matches</p>
+          <div className="flex items-center gap-2.5 mb-1">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted">
+              <Swords className="h-4 w-4 text-muted-foreground" strokeWidth={2} />
+            </div>
+            <h1 className="text-2xl font-black tracking-tight">Liga Activa</h1>
+          </div>
+          <p className="text-sm text-muted-foreground ml-10.5">Clasificación y partidas de la ronda actual</p>
         </div>
         <Card>
           <CardContent className="py-16 text-center space-y-1">
-            <p className="text-sm font-medium text-muted-foreground">No active league</p>
+            <p className="text-sm font-semibold text-muted-foreground">Sin liga activa</p>
             <p className="text-xs text-muted-foreground">
-              The admin will start a new league when everyone is ready.
+              El admin iniciará una nueva liga cuando todos estén listos.
             </p>
           </CardContent>
         </Card>
@@ -330,7 +360,6 @@ export default async function LeaguePage() {
     )
   }
 
-  // Fetch all matches for this league
   const { data: matchesRaw } = await supabase
     .from('matches')
     .select('*')
@@ -339,12 +368,10 @@ export default async function LeaguePage() {
 
   const matches = (matchesRaw ?? []) as Match[]
 
-  // Collect unique player IDs
   const playerIds = [
     ...new Set(matches.flatMap((m) => [m.player_a_id, m.player_b_id])),
   ]
 
-  // Fetch profiles for those players
   const { data: profilesRaw } = await supabase
     .from('profiles')
     .select('id, username, avatar_url')
@@ -353,16 +380,13 @@ export default async function LeaguePage() {
   const profiles = (profilesRaw ?? []) as Pick<Profile, 'id' | 'username' | 'avatar_url'>[]
   const profileMap = new Map(profiles.map((p) => [p.id, p]))
 
-  // Compute standings
   const standings = computeStandings(matches, profiles)
 
-  // Progress
   const resolvedCount = matches.filter(
     (m) => m.status === 'validated' || m.status === 'admin_resolved' || m.status === 'voided'
   ).length
   const totalCount = matches.length
 
-  // Group matches by status for tabs
   const pending = matches.filter((m) => m.status === 'pending')
   const disputed = matches.filter((m) => m.status === 'disputed')
   const done = matches.filter(
@@ -372,7 +396,6 @@ export default async function LeaguePage() {
 
   const currentUserId = authUser?.id ?? null
 
-  // "Your matches" = current user's pending matches
   const myPendingMatches = pending.filter(
     (m) => m.player_a_id === currentUserId || m.player_b_id === currentUserId
   )
@@ -383,41 +406,43 @@ export default async function LeaguePage() {
       {/* ── Header ── */}
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
-            <Swords className="h-6 w-6 text-amber-500 shrink-0" />
-            {league.title}
-          </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Active league · started{' '}
-            {new Date(league.created_at).toLocaleDateString('en-US', {
+          <div className="flex items-center gap-2.5 mb-1">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-amber-400 to-amber-600 shadow-sm shadow-amber-500/25">
+              <Swords className="h-4 w-4 text-white" strokeWidth={2.5} />
+            </div>
+            <h1 className="text-2xl font-black tracking-tight">{league.title}</h1>
+          </div>
+          <p className="text-sm text-muted-foreground ml-10.5">
+            Liga activa · iniciada el{' '}
+            {new Date(league.created_at).toLocaleDateString('es-ES', {
               month: 'long',
               day: 'numeric',
             })}
           </p>
         </div>
-        <Trophy className="h-8 w-8 text-amber-400/60 shrink-0 mt-1" />
+        <Trophy className="h-7 w-7 text-amber-400/50 dark:text-amber-500/40 shrink-0 mt-1" />
       </div>
 
       {/* ── Progress bar ── */}
       <ProgressBar done={resolvedCount} total={totalCount} />
 
       {/* ── Main grid: standings + matches ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-4 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-4 items-start">
 
         {/* Left: Standings */}
-        <Card className="self-start">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base">Standings</CardTitle>
-            <CardDescription className="text-xs">This league only</CardDescription>
+        <Card className="self-start overflow-hidden">
+          <CardHeader className="pb-3 border-b border-border/40">
+            <CardTitle className="text-sm font-bold">Clasificación</CardTitle>
+            <CardDescription className="text-xs">Solo esta liga</CardDescription>
           </CardHeader>
           <CardContent className="p-0">
             <Table>
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
-                  <TableHead className="w-10 text-center pl-4">#</TableHead>
-                  <TableHead>Player</TableHead>
-                  <TableHead className="text-right">Pts</TableHead>
-                  <TableHead className="text-right pr-4">W-L</TableHead>
+                  <TableHead className="w-10 text-center pl-3 text-[10px] font-black uppercase tracking-wide text-muted-foreground/60">#</TableHead>
+                  <TableHead className="text-[10px] font-black uppercase tracking-wide text-muted-foreground/60">Jugador</TableHead>
+                  <TableHead className="text-right text-[10px] font-black uppercase tracking-wide text-muted-foreground/60">Pts</TableHead>
+                  <TableHead className="text-right pr-3 text-[10px] font-black uppercase tracking-wide text-muted-foreground/60">V-D</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -428,40 +453,43 @@ export default async function LeaguePage() {
                     <TableRow
                       key={row.id}
                       className={cn(
-                        'transition-colors',
-                        isMe && 'bg-primary/5',
-                        rank === 1 && 'bg-amber-50/60 dark:bg-amber-950/20',
+                        'transition-colors border-border/30',
+                        isMe && 'bg-blue-50/40 dark:bg-blue-950/15',
+                        rank === 1 && 'bg-amber-50/50 dark:bg-amber-950/15',
                       )}
                     >
-                      <TableCell className="text-center pl-4 text-sm text-muted-foreground tabular-nums">
-                        {rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : rank}
+                      <TableCell className="text-center pl-3">
+                        <StandingsRank rank={rank} />
                       </TableCell>
                       <TableCell>
                         <Link
                           href={`/profile/${row.id}`}
-                          className="flex items-center gap-2 group w-fit"
+                          className="flex items-center gap-1.5 group w-fit"
                         >
-                          <Avatar className="h-6 w-6 shrink-0">
+                          <Avatar className="h-5 w-5 shrink-0">
                             <AvatarImage src={row.avatar_url ?? undefined} />
-                            <AvatarFallback className="text-[10px]">
+                            <AvatarFallback className="text-[8px] font-bold">
                               {row.username.slice(0, 2).toUpperCase()}
                             </AvatarFallback>
                           </Avatar>
-                          <div className="flex items-center gap-1.5 min-w-0">
-                            <span className="text-sm font-medium truncate group-hover:underline underline-offset-4">
+                          <div className="flex items-center gap-1 min-w-0">
+                            <span className="text-xs font-semibold truncate group-hover:underline underline-offset-4">
                               {row.username}
                             </span>
                             {streakLabel(row.streak)}
+                            {isMe && (
+                              <span className="text-[9px] text-muted-foreground/50 font-medium">(tú)</span>
+                            )}
                           </div>
                         </Link>
                       </TableCell>
-                      <TableCell className="text-right font-bold tabular-nums">
+                      <TableCell className="text-right font-black tabular-nums text-sm">
                         {row.points}
                       </TableCell>
-                      <TableCell className="text-right pr-4 tabular-nums text-sm text-muted-foreground">
-                        <span className="text-green-600 dark:text-green-400">{row.wins}</span>
-                        <span className="mx-0.5">-</span>
-                        <span className="text-red-500 dark:text-red-400">{row.losses}</span>
+                      <TableCell className="text-right pr-3 tabular-nums text-xs">
+                        <span className="text-green-600 dark:text-green-400 font-semibold">{row.wins}</span>
+                        <span className="text-muted-foreground/40 mx-0.5">-</span>
+                        <span className="text-red-500 dark:text-red-400 font-semibold">{row.losses}</span>
                       </TableCell>
                     </TableRow>
                   )
@@ -472,62 +500,50 @@ export default async function LeaguePage() {
         </Card>
 
         {/* Right: Match groups */}
-        <div className="space-y-4">
+        <div className="space-y-5">
 
-          {/* Your pending matches — highlighted */}
+          {/* Your pending matches */}
           {myPendingMatches.length > 0 && (
             <div className="space-y-2">
-              <p className="text-xs font-semibold text-amber-600 dark:text-amber-400 uppercase tracking-wide flex items-center gap-1">
+              <p className="text-[10px] font-black text-amber-600 dark:text-amber-400 uppercase tracking-[0.18em] flex items-center gap-1.5">
                 <span className="inline-block w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
-                Waiting for your vote
+                Esperando tu voto
               </p>
               {myPendingMatches.map((m) => {
                 const pA = profileMap.get(m.player_a_id)
                 const pB = profileMap.get(m.player_b_id)
                 if (!pA || !pB) return null
                 return (
-                  <MatchCard
-                    key={m.id}
-                    match={m}
-                    playerA={pA}
-                    playerB={pB}
-                    currentUserId={currentUserId}
-                  />
+                  <MatchCard key={m.id} match={m} playerA={pA} playerB={pB} currentUserId={currentUserId} />
                 )
               })}
-              <Separator />
+              <Separator className="mt-1 opacity-50" />
             </div>
           )}
 
           {/* Disputed */}
           {disputed.length > 0 && (
             <div className="space-y-2">
-              <p className="text-xs font-semibold text-red-500 uppercase tracking-wide">
-                Disputed — Admin review needed
+              <p className="text-[10px] font-black text-red-500 uppercase tracking-[0.18em]">
+                Disputados — Revisión admin
               </p>
               {disputed.map((m) => {
                 const pA = profileMap.get(m.player_a_id)
                 const pB = profileMap.get(m.player_b_id)
                 if (!pA || !pB) return null
                 return (
-                  <MatchCard
-                    key={m.id}
-                    match={m}
-                    playerA={pA}
-                    playerB={pB}
-                    currentUserId={currentUserId}
-                  />
+                  <MatchCard key={m.id} match={m} playerA={pA} playerB={pB} currentUserId={currentUserId} />
                 )
               })}
-              <Separator />
+              <Separator className="mt-1 opacity-50" />
             </div>
           )}
 
-          {/* All pending (excluding "my" ones already shown above) */}
+          {/* All pending (not mine) */}
           {pending.filter((m) => !myPendingMatches.includes(m)).length > 0 && (
             <div className="space-y-2">
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                Pending ({pending.length})
+              <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.18em]">
+                Pendientes ({pending.length})
               </p>
               {pending
                 .filter((m) => !myPendingMatches.includes(m))
@@ -536,13 +552,7 @@ export default async function LeaguePage() {
                   const pB = profileMap.get(m.player_b_id)
                   if (!pA || !pB) return null
                   return (
-                    <MatchCard
-                      key={m.id}
-                      match={m}
-                      playerA={pA}
-                      playerB={pB}
-                      currentUserId={currentUserId}
-                    />
+                    <MatchCard key={m.id} match={m} playerA={pA} playerB={pB} currentUserId={currentUserId} />
                   )
                 })}
             </div>
@@ -551,21 +561,15 @@ export default async function LeaguePage() {
           {/* Resolved */}
           {done.length > 0 && (
             <div className="space-y-2">
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                Completed ({done.length})
+              <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.18em]">
+                Completados ({done.length})
               </p>
               {done.map((m) => {
                 const pA = profileMap.get(m.player_a_id)
                 const pB = profileMap.get(m.player_b_id)
                 if (!pA || !pB) return null
                 return (
-                  <MatchCard
-                    key={m.id}
-                    match={m}
-                    playerA={pA}
-                    playerB={pB}
-                    currentUserId={currentUserId}
-                  />
+                  <MatchCard key={m.id} match={m} playerA={pA} playerB={pB} currentUserId={currentUserId} />
                 )
               })}
             </div>
@@ -574,21 +578,15 @@ export default async function LeaguePage() {
           {/* Voided */}
           {voided.length > 0 && (
             <div className="space-y-2">
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                Voided ({voided.length})
+              <p className="text-[10px] font-black text-muted-foreground/60 uppercase tracking-[0.18em]">
+                Anulados ({voided.length})
               </p>
               {voided.map((m) => {
                 const pA = profileMap.get(m.player_a_id)
                 const pB = profileMap.get(m.player_b_id)
                 if (!pA || !pB) return null
                 return (
-                  <MatchCard
-                    key={m.id}
-                    match={m}
-                    playerA={pA}
-                    playerB={pB}
-                    currentUserId={currentUserId}
-                  />
+                  <MatchCard key={m.id} match={m} playerA={pA} playerB={pB} currentUserId={currentUserId} />
                 )
               })}
             </div>
@@ -597,7 +595,7 @@ export default async function LeaguePage() {
           {matches.length === 0 && (
             <Card>
               <CardContent className="py-12 text-center">
-                <p className="text-sm text-muted-foreground">No matches generated yet.</p>
+                <p className="text-sm text-muted-foreground">Sin partidas generadas aún.</p>
               </CardContent>
             </Card>
           )}

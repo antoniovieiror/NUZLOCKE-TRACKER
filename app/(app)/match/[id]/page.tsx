@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { ChevronLeft, Swords } from 'lucide-react'
+import { ChevronRight, Swords } from 'lucide-react'
 
 import { createClient } from '@/lib/supabase/server'
 import { cn } from '@/lib/utils'
@@ -32,29 +32,33 @@ function H2HBar({
 
   return (
     <div className="space-y-2">
-      <div className="flex justify-between text-xs font-medium text-muted-foreground uppercase tracking-wide">
-        <span>All-time head-to-head</span>
-        <span>{aWins} — {bWins}</span>
+      <div className="flex justify-between items-center">
+        <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.15em]">
+          Historial H2H
+        </p>
+        <span className="text-xs font-bold tabular-nums text-muted-foreground">
+          {aWins} — {bWins}
+        </span>
       </div>
-      <div className="flex h-2 rounded-full overflow-hidden gap-px">
+      <div className="flex h-1.5 rounded-full overflow-hidden gap-px">
         {total === 0 ? (
           <div className="flex-1 bg-muted rounded-full" />
         ) : (
           <>
             <div
-              className="bg-blue-400 dark:bg-blue-500 transition-all"
+              className="bg-blue-400 dark:bg-blue-500 rounded-l-full transition-all duration-500"
               style={{ width: `${aPct}%` }}
             />
             <div
-              className="bg-rose-400 dark:bg-rose-500 transition-all"
+              className="bg-rose-400 dark:bg-rose-500 rounded-r-full transition-all duration-500"
               style={{ width: `${bPct}%` }}
             />
           </>
         )}
       </div>
-      <div className="flex justify-between text-[11px] text-muted-foreground">
-        <span className="text-blue-500">{aName} {total > 0 ? `${aPct}%` : ''}</span>
-        <span className="text-rose-500">{total > 0 ? `${bPct}%` : ''} {bName}</span>
+      <div className="flex justify-between text-[11px] font-semibold">
+        <span className="text-blue-500 dark:text-blue-400">{aName}{total > 0 ? ` ${aPct}%` : ''}</span>
+        <span className="text-rose-500 dark:text-rose-400">{total > 0 ? `${bPct}% ` : ''}{bName}</span>
       </div>
     </div>
   )
@@ -80,59 +84,60 @@ function VSHero({
 
   return (
     <Card className="overflow-hidden border-border/50 shadow-md">
+      {/* Top accent bar */}
+      <div className={cn(
+        'h-0.5 w-full',
+        isVoided
+          ? 'bg-muted'
+          : isResolved
+          ? 'bg-gradient-to-r from-blue-400 via-green-400 to-rose-400'
+          : 'bg-gradient-to-r from-blue-400 via-muted-foreground/30 to-rose-400'
+      )} />
       <CardContent className="p-0">
         <div className="grid grid-cols-[1fr_auto_1fr]">
 
           {/* Player A */}
           <div
             className={cn(
-              'relative flex flex-col items-center gap-2.5 p-6 overflow-hidden transition-all duration-300',
+              'relative flex flex-col items-center gap-3 p-6 overflow-hidden transition-all duration-300',
               aWon
-                ? 'bg-gradient-to-br from-green-50 to-emerald-50/30 dark:from-green-950/30 dark:to-emerald-950/10'
+                ? 'bg-gradient-to-br from-green-50/80 to-emerald-50/20 dark:from-green-950/25 dark:to-transparent'
                 : isResolved && !aWon
-                ? 'bg-muted/20 opacity-55'
-                : 'bg-gradient-to-br from-blue-50/60 to-transparent dark:from-blue-950/20 dark:to-transparent'
+                ? 'bg-muted/15 opacity-50'
+                : 'bg-gradient-to-br from-blue-50/50 to-transparent dark:from-blue-950/15 dark:to-transparent'
             )}
           >
-            {/* Subtle side glow */}
-            <div className="pointer-events-none absolute inset-0" aria-hidden>
-              <div className={cn(
-                'absolute inset-0 opacity-0 transition-opacity duration-300',
-                !isResolved && 'bg-gradient-to-r from-blue-400/5 to-transparent'
-              )} />
-            </div>
-
             <Avatar className={cn(
               'h-16 w-16 sm:h-20 sm:w-20 ring-2 transition-all duration-200',
               aWon
                 ? 'ring-green-300 dark:ring-green-700 shadow-lg shadow-green-200/50 dark:shadow-green-900/30 scale-105'
-                : 'ring-border/60'
+                : 'ring-border/50'
             )}>
               <AvatarImage src={playerA.avatar_url ?? undefined} />
-              <AvatarFallback className="text-xl font-bold bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300">
+              <AvatarFallback className="text-xl font-black bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300">
                 {playerA.username.slice(0, 2).toUpperCase()}
               </AvatarFallback>
             </Avatar>
             <Link
               href={`/profile/${playerA.id}`}
-              className="relative font-semibold text-sm sm:text-base text-center hover:underline underline-offset-4 truncate max-w-[100px]"
+              className="font-bold text-sm sm:text-base text-center hover:underline underline-offset-4 truncate max-w-[100px]"
             >
               {playerA.username}
             </Link>
             {aWon && (
-              <span className="text-[11px] font-bold text-green-600 dark:text-green-400 uppercase tracking-widest">
-                ✦ Winner
+              <span className="text-[10px] font-black text-green-600 dark:text-green-400 uppercase tracking-[0.18em]">
+                Ganador
               </span>
             )}
           </div>
 
           {/* Center divider */}
-          <div className="flex flex-col items-center justify-center px-3 py-6 gap-1.5 bg-muted/30 dark:bg-muted/10 border-x border-border/40">
+          <div className="flex flex-col items-center justify-center px-4 py-6 gap-2 border-x border-border/40 bg-muted/20 dark:bg-muted/10">
             <Swords className={cn(
               'h-5 w-5 transition-colors',
-              isVoided ? 'text-muted-foreground/40' : 'text-muted-foreground'
-            )} />
-            <span className="text-[10px] font-bold text-muted-foreground tracking-widest">
+              isVoided ? 'text-muted-foreground/30' : 'text-muted-foreground/70'
+            )} strokeWidth={1.5} />
+            <span className="text-[9px] font-black text-muted-foreground/60 tracking-[0.25em]">
               {isVoided ? 'VOID' : isResolved ? 'FIN' : 'VS'}
             </span>
           </div>
@@ -140,34 +145,34 @@ function VSHero({
           {/* Player B */}
           <div
             className={cn(
-              'relative flex flex-col items-center gap-2.5 p-6 overflow-hidden transition-all duration-300',
+              'relative flex flex-col items-center gap-3 p-6 overflow-hidden transition-all duration-300',
               bWon
-                ? 'bg-gradient-to-bl from-green-50 to-emerald-50/30 dark:from-green-950/30 dark:to-emerald-950/10'
+                ? 'bg-gradient-to-bl from-green-50/80 to-emerald-50/20 dark:from-green-950/25 dark:to-transparent'
                 : isResolved && !bWon
-                ? 'bg-muted/20 opacity-55'
-                : 'bg-gradient-to-bl from-rose-50/60 to-transparent dark:from-rose-950/20 dark:to-transparent'
+                ? 'bg-muted/15 opacity-50'
+                : 'bg-gradient-to-bl from-rose-50/50 to-transparent dark:from-rose-950/15 dark:to-transparent'
             )}
           >
             <Avatar className={cn(
               'h-16 w-16 sm:h-20 sm:w-20 ring-2 transition-all duration-200',
               bWon
                 ? 'ring-green-300 dark:ring-green-700 shadow-lg shadow-green-200/50 dark:shadow-green-900/30 scale-105'
-                : 'ring-border/60'
+                : 'ring-border/50'
             )}>
               <AvatarImage src={playerB.avatar_url ?? undefined} />
-              <AvatarFallback className="text-xl font-bold bg-rose-50 text-rose-700 dark:bg-rose-950 dark:text-rose-300">
+              <AvatarFallback className="text-xl font-black bg-rose-50 text-rose-700 dark:bg-rose-950 dark:text-rose-300">
                 {playerB.username.slice(0, 2).toUpperCase()}
               </AvatarFallback>
             </Avatar>
             <Link
               href={`/profile/${playerB.id}`}
-              className="relative font-semibold text-sm sm:text-base text-center hover:underline underline-offset-4 truncate max-w-[100px]"
+              className="font-bold text-sm sm:text-base text-center hover:underline underline-offset-4 truncate max-w-[100px]"
             >
               {playerB.username}
             </Link>
             {bWon && (
-              <span className="text-[11px] font-bold text-green-600 dark:text-green-400 uppercase tracking-widest">
-                ✦ Winner
+              <span className="text-[10px] font-black text-green-600 dark:text-green-400 uppercase tracking-[0.18em]">
+                Ganador
               </span>
             )}
           </div>
@@ -187,7 +192,6 @@ export default async function MatchPage({
   const { id } = await params
   const supabase = await createClient()
 
-  // Current user + match in parallel
   const [{ data: matchRaw }, { data: { user: authUser } }] = await Promise.all([
     supabase.from('matches').select('*').eq('id', id).single(),
     supabase.auth.getUser(),
@@ -196,7 +200,6 @@ export default async function MatchPage({
   if (!matchRaw) notFound()
   const match = matchRaw as Match
 
-  // Fetch profiles for both players
   const { data: profilesRaw } = await supabase
     .from('profiles')
     .select('id, username, avatar_url, role')
@@ -207,7 +210,6 @@ export default async function MatchPage({
   const playerB = profiles.find((p) => p.id === match.player_b_id)
   if (!playerA || !playerB) notFound()
 
-  // Current user info
   const currentUserId = authUser?.id ?? null
 
   let isAdmin = false
@@ -216,7 +218,6 @@ export default async function MatchPage({
     if (me?.role === 'admin') {
       isAdmin = true
     } else {
-      // Admin might not be a participant — fetch separately
       const { data: adminCheck } = await supabase
         .from('profiles')
         .select('role')
@@ -226,7 +227,6 @@ export default async function MatchPage({
     }
   }
 
-  // Head-to-head: all matches between these two players across all leagues
   const { data: allMatchesRaw } = await supabase
     .from('matches')
     .select('winner_id, player_a_id, player_b_id, status')
@@ -249,13 +249,11 @@ export default async function MatchPage({
     { aWins: 0, bWins: 0 }
   )
 
-  // Determine vote visibility (double-blind)
   const isPlayerA = currentUserId === playerA.id
   const isPlayerB = currentUserId === playerB.id
   const isParticipant = isPlayerA || isPlayerB
   const isResolved = match.status === 'validated' || match.status === 'admin_resolved'
 
-  // My vote / other player voted (boolean)
   let myVote = null
   let otherVoted = false
   if (isPlayerA) {
@@ -265,12 +263,10 @@ export default async function MatchPage({
     myVote = match.vote_b
     otherVoted = !!match.vote_a
   } else if (isAdmin || isResolved) {
-    // Admin or resolved: can see both
     myVote = null
     otherVoted = !!(match.vote_a || match.vote_b)
   }
 
-  // League title for breadcrumb
   const { data: leagueRaw } = await supabase
     .from('leagues')
     .select('id, title, status')
@@ -281,22 +277,22 @@ export default async function MatchPage({
     <div className="space-y-5 pb-10 max-w-xl mx-auto">
 
       {/* ── Breadcrumb ── */}
-      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+      <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
         <Link href="/" className="hover:text-foreground transition-colors">
-          Leaderboard
+          Clasificación
         </Link>
-        <ChevronLeft className="h-3.5 w-3.5 rotate-180" />
+        <ChevronRight className="h-3.5 w-3.5 opacity-40" />
         {leagueRaw?.status === 'active' ? (
           <Link href="/league" className="hover:text-foreground transition-colors">
             {leagueRaw.title}
           </Link>
         ) : (
           <Link href="/history" className="hover:text-foreground transition-colors">
-            {leagueRaw?.title ?? 'League'}
+            {leagueRaw?.title ?? 'Liga'}
           </Link>
         )}
-        <ChevronLeft className="h-3.5 w-3.5 rotate-180" />
-        <span className="text-foreground font-medium">Match</span>
+        <ChevronRight className="h-3.5 w-3.5 opacity-40" />
+        <span className="text-foreground font-semibold">Partida</span>
       </div>
 
       {/* ── VS Hero ── */}
@@ -315,7 +311,7 @@ export default async function MatchPage({
         bName={playerB.username}
       />
 
-      <Separator />
+      <Separator className="opacity-50" />
 
       {/* ── Vote card ── */}
       {currentUserId && (
@@ -335,10 +331,11 @@ export default async function MatchPage({
       )}
 
       {!currentUserId && isResolved && (
-        <div className="rounded-lg border p-4 text-sm text-muted-foreground text-center">
-          Winner: <span className="font-semibold text-foreground">
+        <div className="rounded-xl border border-border/50 bg-card p-5 text-sm text-center">
+          <p className="text-muted-foreground">Ganador</p>
+          <p className="font-black text-lg mt-0.5">
             {match.winner_id === playerA.id ? playerA.username : playerB.username}
-          </span>
+          </p>
         </div>
       )}
 
