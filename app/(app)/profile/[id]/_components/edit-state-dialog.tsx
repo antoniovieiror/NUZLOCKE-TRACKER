@@ -22,10 +22,9 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 
 const schema = z.object({
-  badges: z.number().int().min(0).max(8),
+  badges: z.number().int().min(0).max(12),
   deaths: z.number().int().min(0),
   wipes: z.number().int().min(0),
-  mvp: z.string().max(100),
   notes: z.string().max(1000),
 })
 
@@ -37,7 +36,6 @@ interface Props {
     badges: number
     deaths: number
     wipes: number
-    mvp: string | null
     notes: string | null
   }
 }
@@ -57,7 +55,6 @@ export function EditStateDialog({ profileId, initialValues }: Props) {
       badges: initialValues.badges,
       deaths: initialValues.deaths,
       wipes: initialValues.wipes,
-      mvp: initialValues.mvp ?? '',
       notes: initialValues.notes ?? '',
     },
   })
@@ -68,7 +65,6 @@ export function EditStateDialog({ profileId, initialValues }: Props) {
         badges: initialValues.badges,
         deaths: initialValues.deaths,
         wipes: initialValues.wipes,
-        mvp: initialValues.mvp ?? '',
         notes: initialValues.notes ?? '',
       })
     }
@@ -77,6 +73,7 @@ export function EditStateDialog({ profileId, initialValues }: Props) {
 
   function onSubmit(values: FormValues) {
     startTransition(async () => {
+      // mvp is managed separately via the crown toggle on team cards
       const result = await updateNuzlockeState(profileId, values)
       if (result.error) {
         toast.error('Error al guardar', { description: String(result.error) })
@@ -89,7 +86,6 @@ export function EditStateDialog({ profileId, initialValues }: Props) {
 
   return (
     <>
-      {/* Trigger — plain button, dialog is fully controlled */}
       <Button
         variant="outline"
         size="sm"
@@ -105,7 +101,8 @@ export function EditStateDialog({ profileId, initialValues }: Props) {
           <DialogHeader>
             <DialogTitle>Editar estado Nuzlocke</DialogTitle>
             <DialogDescription>
-              Actualiza medallas, muertes, wipes, Pokémon MVP y notas de tu partida.
+              Actualiza medallas, muertes, wipes y notas de tu partida.
+              El MVP se selecciona directamente desde el equipo.
             </DialogDescription>
           </DialogHeader>
 
@@ -118,7 +115,7 @@ export function EditStateDialog({ profileId, initialValues }: Props) {
                   id="badges"
                   type="number"
                   min={0}
-                  max={8}
+                  max={12}
                   {...register('badges', { valueAsNumber: true })}
                   aria-invalid={!!errors.badges}
                 />
@@ -154,20 +151,6 @@ export function EditStateDialog({ profileId, initialValues }: Props) {
                   <p className="text-xs text-destructive">{errors.wipes.message}</p>
                 )}
               </div>
-            </div>
-
-            {/* MVP */}
-            <div className="space-y-2">
-              <Label htmlFor="mvp">Pokémon MVP</Label>
-              <Input
-                id="mvp"
-                placeholder="ej. Typhlosion"
-                {...register('mvp')}
-                aria-invalid={!!errors.mvp}
-              />
-              {errors.mvp && (
-                <p className="text-xs text-destructive">{errors.mvp.message}</p>
-              )}
             </div>
 
             {/* Notes */}

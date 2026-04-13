@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { ChevronLeft, Skull, Shield, Star, Zap } from 'lucide-react'
+import { ChevronLeft, Skull, Shield, Zap } from 'lucide-react'
 
 import { createClient } from '@/lib/supabase/server'
 import { cn } from '@/lib/utils'
@@ -14,6 +14,7 @@ import { AvatarUpload } from './_components/avatar-upload'
 import { UsernameEditor } from './_components/username-editor'
 import { EditStateDialog } from './_components/edit-state-dialog'
 import { PokemonSection } from './_components/pokemon-section'
+import { MvpCard, MvpEmpty } from './_components/mvp-card'
 
 // ─── Stat card ─────────────────────────────────────────────────────────────────
 
@@ -49,7 +50,7 @@ function StatCard({
 function GymBadges({ count }: { count: number }) {
   return (
     <div className="flex flex-wrap gap-1.5">
-      {Array.from({ length: 8 }).map((_, i) => (
+      {Array.from({ length: 12 }).map((_, i) => (
         <div
           key={i}
           className={cn(
@@ -62,7 +63,7 @@ function GymBadges({ count }: { count: number }) {
           {i < count && <span className="text-[8px] font-bold text-amber-900">✦</span>}
         </div>
       ))}
-      <span className="text-sm text-muted-foreground ml-1 self-center">{count}/8</span>
+      <span className="text-sm text-muted-foreground ml-1 self-center">{count}/12</span>
     </div>
   )
 }
@@ -213,7 +214,6 @@ export default async function ProfilePage({
                   badges: profile.badges,
                   deaths: profile.deaths,
                   wipes: profile.wipes,
-                  mvp: profile.mvp,
                   notes: profile.notes,
                 }}
               />
@@ -264,18 +264,18 @@ export default async function ProfilePage({
             <Separator />
 
             {/* MVP */}
-            <div className="space-y-1">
-              <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                <Star className="h-3.5 w-3.5" />
+            <div className="space-y-2">
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
                 MVP
-              </div>
-              <p className="text-sm capitalize">
-                {profile.mvp ? (
-                  profile.mvp.replace(/-/g, ' ')
-                ) : (
-                  <span className="text-muted-foreground italic">Sin definir</span>
-                )}
               </p>
+              {profile.mvp ? (
+                <MvpCard
+                  species={profile.mvp}
+                  nickname={profile.team.find((e) => e.species === profile.mvp)?.nickname ?? ''}
+                />
+              ) : (
+                <MvpEmpty />
+              )}
             </div>
 
             <Separator />
@@ -301,6 +301,7 @@ export default async function ProfilePage({
           profileId={profile.id}
           initialTeam={profile.team}
           initialBox={profile.box}
+          initialMvp={profile.mvp}
           canEdit={canEdit}
         />
       </div>

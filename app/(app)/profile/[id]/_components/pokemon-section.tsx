@@ -1,10 +1,11 @@
 'use client'
 
 import { useState, useEffect, useTransition, useRef } from 'react'
-import { Plus, X, Loader2, Search, Pencil, Check } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { Plus, X, Loader2, Search, Pencil, Check, Crown } from 'lucide-react'
 import { toast } from 'sonner'
 
-import { updateTeam, updateBox } from '@/lib/actions/profile'
+import { updateTeam, updateBox, updateMvp } from '@/lib/actions/profile'
 import type { PokemonEntry } from '@/lib/types'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -12,10 +13,9 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
 
-// ─── PokéAPI types & module-level cache ────────────────────────────────────────
+// ─── PokéAPI cache ─────────────────────────────────────────────────────────────
 
 interface PokeListItem { name: string; url: string }
-
 let cachedPokemonList: PokeListItem[] | null = null
 let listFetchPromise: Promise<PokeListItem[]> | null = null
 
@@ -43,7 +43,6 @@ function NicknameEditor({
   const [value, setValue] = useState(nickname)
   const inputRef = useRef<HTMLInputElement>(null)
 
-  // Sync if parent changes (e.g. after server revalidation)
   useEffect(() => { setValue(nickname) }, [nickname])
 
   function startEditing() {
@@ -113,11 +112,23 @@ interface PokemonCardProps {
   entry: PokemonEntry
   canEdit: boolean
   editMode: boolean
+  isMvp: boolean
   onRemove: () => void
   onNicknameChange: (nickname: string) => void
+  onToggleMvp: () => void
+  isTeam: boolean // crown only on team cards
 }
 
-function PokemonCard({ entry, canEdit, editMode, onRemove, onNicknameChange }: PokemonCardProps) {
+function PokemonCard({
+  entry,
+  canEdit,
+  editMode,
+  isMvp,
+  onRemove,
+  onNicknameChange,
+  onToggleMvp,
+  isTeam,
+}: PokemonCardProps) {
   const [sprite, setSprite] = useState<string | null>(null)
 
   useEffect(() => {
@@ -137,14 +148,10 @@ function PokemonCard({ entry, canEdit, editMode, onRemove, onNicknameChange }: P
 
   return (
     <div className="relative group/card flex flex-col items-center gap-0.5">
-      {/* Nickname — above sprite */}
-      <NicknameEditor
-        nickname={entry.nickname}
-        canEdit={canEdit}
-        onSave={onNicknameChange}
-      />
+      {/* Nickname */}
+      <NicknameEditor nickname={entry.nickname} canEdit={canEdit} onSave={onNicknameChange} />
 
-      {/* Sprite */}
+      {/* Sprite container */}
       <div className="relative w-16 h-16 sm:w-20 sm:h-20">
         {sprite ? (
           <img
@@ -152,13 +159,41 @@ function PokemonCard({ entry, canEdit, editMode, onRemove, onNicknameChange }: P
             alt={entry.species}
             width={80}
             height={80}
-            className="object-contain w-full h-full drop-shadow-sm"
+            className={cn(
+              'object-contain w-full h-full drop-shadow-sm transition-all duration-200',
+              isMvp && 'drop-shadow-[0_0_8px_rgba(251,191,36,0.7)]'
+            )}
           />
         ) : (
           <Skeleton className="w-full h-full rounded-lg" />
         )}
 
-        {/* Remove button */}
+        {/* Crown toggle — top-left, only on team cards in edit mode */}
+        {isTeam && editMode && canEdit && (
+          <button
+            onClick={onToggleMvp}
+            aria-label={isMvp ? 'Quitar MVP' : 'Marcar como MVP'}
+            title={isMvp ? 'Quitar MVP' : 'Marcar como MVP'}
+            className={cn(
+              'absolute -top-2 -left-2 z-10 flex items-center justify-center w-5 h-5 rounded-full',
+              'shadow-sm transition-all duration-200',
+              isMvp
+                ? 'bg-amber-400 dark:bg-amber-500 shadow-amber-300/60 dark:shadow-amber-700/60 scale-110'
+                : 'bg-muted/80 hover:bg-amber-100 dark:hover:bg-amber-900/50 text-muted-foreground hover:text-amber-600'
+            )}
+          >
+            <Crown className={cn('h-3 w-3 transition-colors', isMvp ? 'text-amber-900' : '')} />
+          </button>
+        )}
+
+        {/* MVP glow ring when not in edit mode */}
+        {isTeam && isMvp && !editMode && (
+          <span className="absolute -top-2 -right-2 text-xs select-none drop-shadow" aria-hidden>
+            👑
+          </span>
+        )}
+
+        {/* Remove button — top-right */}
         {editMode && (
           <button
             onClick={onRemove}
@@ -246,7 +281,6 @@ function PokemonSearch({
           <Loader2 className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground animate-spin" />
         )}
       </div>
-
       {suggestions.length > 0 && (
         <ul className="absolute z-50 mt-1 w-full bg-popover border rounded-lg shadow-lg overflow-hidden">
           {suggestions.map((name) => (
@@ -271,9 +305,12 @@ function PokemonGrid({
   pokemon,
   canEdit,
   editMode,
+  mvpSpecies,
+  isTeam,
   onRemove,
   onAdd,
   onNicknameChange,
+  onToggleMvp,
   slots,
   addDisabled,
   addDisabledReason,
@@ -282,9 +319,12 @@ function PokemonGrid({
   pokemon: PokemonEntry[]
   canEdit: boolean
   editMode: boolean
+  mvpSpecies: string | null
+  isTeam: boolean
   onRemove: (index: number) => void
   onAdd: (name: string) => void
   onNicknameChange: (index: number, nickname: string) => void
+  onToggleMvp: (species: string) => void
   slots?: number
   addDisabled?: boolean
   addDisabledReason?: string
@@ -301,9 +341,7 @@ function PokemonGrid({
       ) : (
         <div className={cn(
           'grid gap-3',
-          slots === 6
-            ? 'grid-cols-3 sm:grid-cols-6'
-            : 'grid-cols-4 sm:grid-cols-6 md:grid-cols-8'
+          slots === 6 ? 'grid-cols-3 sm:grid-cols-6' : 'grid-cols-4 sm:grid-cols-6 md:grid-cols-8'
         )}>
           {cells.map((entry, i) =>
             entry ? (
@@ -312,8 +350,11 @@ function PokemonGrid({
                 entry={entry}
                 canEdit={canEdit}
                 editMode={editMode}
+                isMvp={isTeam && entry.species === mvpSpecies}
+                isTeam={isTeam}
                 onRemove={() => onRemove(i)}
                 onNicknameChange={(nick) => onNicknameChange(i, nick)}
+                onToggleMvp={() => onToggleMvp(entry.species)}
               />
             ) : slots ? (
               <EmptySlot key={`empty-${i}`} />
@@ -321,7 +362,6 @@ function PokemonGrid({
           )}
         </div>
       )}
-
       {editMode && (
         <PokemonSearch onAdd={onAdd} disabled={addDisabled} disabledReason={addDisabledReason} />
       )}
@@ -335,32 +375,49 @@ export function PokemonSection({
   profileId,
   initialTeam,
   initialBox,
+  initialMvp,
   canEdit,
 }: {
   profileId: string
   initialTeam: PokemonEntry[]
   initialBox: PokemonEntry[]
+  initialMvp: string | null
   canEdit: boolean
 }) {
+  const router = useRouter()
   const [team, setTeam] = useState<PokemonEntry[]>(initialTeam)
   const [box, setBox] = useState<PokemonEntry[]>(initialBox)
+  const [mvp, setMvp] = useState<string | null>(initialMvp)
   const [teamEditMode, setTeamEditMode] = useState(false)
   const [boxEditMode, setBoxEditMode] = useState(false)
   const [isPending, startTransition] = useTransition()
 
-  // ── helpers ──
+  // ── Team save helper ──
 
-  function saveTeam(next: PokemonEntry[]) {
-    const prev = team
+  function saveTeam(next: PokemonEntry[], clearMvpSpecies?: string) {
+    const prevTeam = team
+    const prevMvp = mvp
+    const shouldClear = !!clearMvpSpecies && mvp === clearMvpSpecies
+
     setTeam(next)
+    if (shouldClear) setMvp(null)
+
     startTransition(async () => {
-      const result = await updateTeam(profileId, next)
-      if (result.error) {
-        toast.error('Error al actualizar el equipo', { description: String(result.error) })
-        setTeam(prev)
+      const teamResult = await updateTeam(profileId, next)
+      if (teamResult.error) {
+        toast.error('Error al actualizar el equipo', { description: String(teamResult.error) })
+        setTeam(prevTeam)
+        if (shouldClear) setMvp(prevMvp)
+        return
+      }
+      if (shouldClear) {
+        await updateMvp(profileId, null)
+        router.refresh()
       }
     })
   }
+
+  // ── Box save helper ──
 
   function saveBox(next: PokemonEntry[]) {
     const prev = box
@@ -371,6 +428,23 @@ export function PokemonSection({
         toast.error('Error al actualizar la caja', { description: String(result.error) })
         setBox(prev)
       }
+    })
+  }
+
+  // ── MVP toggle ──
+
+  function handleToggleMvp(species: string) {
+    const next = mvp === species ? null : species
+    const prev = mvp
+    setMvp(next)
+    startTransition(async () => {
+      const result = await updateMvp(profileId, next)
+      if (result.error) {
+        toast.error('Error al actualizar el MVP', { description: String(result.error) })
+        setMvp(prev)
+        return
+      }
+      router.refresh() // re-renders Nuzlocke State card with updated MVP display
     })
   }
 
@@ -386,7 +460,11 @@ export function PokemonSection({
   }
 
   function removeFromTeam(index: number) {
-    saveTeam(team.filter((_, i) => i !== index))
+    const removed = team[index]
+    saveTeam(
+      team.filter((_, i) => i !== index),
+      removed?.species // pass species so saveTeam can clear MVP if needed
+    )
   }
 
   function updateTeamNickname(index: number, nickname: string) {
@@ -413,12 +491,19 @@ export function PokemonSection({
 
   return (
     <div className="space-y-4">
-      {/* ── Team ── overflow-visible so search dropdown is not clipped */}
+      {/* ── Team ── */}
       <Card className="overflow-visible">
         <CardHeader className="pb-3 flex flex-row items-center justify-between gap-2">
           <div>
             <CardTitle className="text-base">Equipo Activo</CardTitle>
-            <p className="text-xs text-muted-foreground mt-0.5">{team.length}/6 Pokémon</p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              {team.length}/6 Pokémon
+              {teamEditMode && canEdit && (
+                <span className="ml-2 text-amber-600 dark:text-amber-400">
+                  · 👑 para marcar MVP
+                </span>
+              )}
+            </p>
           </div>
           {canEdit && (
             <Button
@@ -437,9 +522,12 @@ export function PokemonSection({
             pokemon={team}
             canEdit={canEdit}
             editMode={teamEditMode}
+            mvpSpecies={mvp}
+            isTeam
             onRemove={removeFromTeam}
             onAdd={addToTeam}
             onNicknameChange={updateTeamNickname}
+            onToggleMvp={handleToggleMvp}
             slots={6}
             addDisabled={team.length >= 6}
             addDisabledReason="Equipo completo (6/6)"
@@ -447,7 +535,7 @@ export function PokemonSection({
         </CardContent>
       </Card>
 
-      {/* ── Box ── overflow-visible so search dropdown is not clipped */}
+      {/* ── Box ── */}
       <Card className="overflow-visible">
         <CardHeader className="pb-3 flex flex-row items-center justify-between gap-2">
           <div>
@@ -471,9 +559,12 @@ export function PokemonSection({
             pokemon={box}
             canEdit={canEdit}
             editMode={boxEditMode}
+            mvpSpecies={null}
+            isTeam={false}
             onRemove={removeFromBox}
             onAdd={addToBox}
             onNicknameChange={updateBoxNickname}
+            onToggleMvp={() => {}}
             emptyMessage="La caja está vacía. Añade Pokémon que formen parte de tu partida pero no estén en tu equipo activo."
           />
         </CardContent>

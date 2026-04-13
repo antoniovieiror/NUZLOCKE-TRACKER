@@ -29,7 +29,7 @@ async function assertCanEdit(profileId: string) {
 
 export async function updateNuzlockeState(
   profileId: string,
-  data: { badges: number; deaths: number; wipes: number; mvp: string; notes: string }
+  data: { badges: number; deaths: number; wipes: number; notes: string }
 ) {
   const { supabase, error } = await assertCanEdit(profileId)
   if (error) return { error }
@@ -40,7 +40,6 @@ export async function updateNuzlockeState(
       badges: Math.max(0, Math.floor(data.badges)),
       deaths: Math.max(0, Math.floor(data.deaths)),
       wipes: Math.max(0, Math.floor(data.wipes)),
-      mvp: data.mvp.trim() || null,
       notes: data.notes.trim() || null,
     })
     .eq('id', profileId)
@@ -91,6 +90,22 @@ export async function updateBox(profileId: string, box: PokemonEntry[]) {
   const { error: dbError } = await supabase!
     .from('profiles')
     .update({ box: cleaned })
+    .eq('id', profileId)
+
+  if (dbError) return { error: dbError.message }
+  revalidatePath(`/profile/${profileId}`)
+  return { success: true }
+}
+
+// ─── MVP ──────────────────────────────────────────────────────────────────────
+
+export async function updateMvp(profileId: string, species: string | null) {
+  const { supabase, error } = await assertCanEdit(profileId)
+  if (error) return { error }
+
+  const { error: dbError } = await supabase!
+    .from('profiles')
+    .update({ mvp: species })
     .eq('id', profileId)
 
   if (dbError) return { error: dbError.message }
