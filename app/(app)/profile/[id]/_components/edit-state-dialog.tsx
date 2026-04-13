@@ -24,6 +24,7 @@ import { Textarea } from '@/components/ui/textarea'
 const schema = z.object({
   badges: z.number().int().min(0).max(8),
   deaths: z.number().int().min(0),
+  wipes: z.number().int().min(0),
   mvp: z.string().max(100),
   notes: z.string().max(1000),
 })
@@ -35,6 +36,7 @@ interface Props {
   initialValues: {
     badges: number
     deaths: number
+    wipes: number
     mvp: string | null
     notes: string | null
   }
@@ -54,6 +56,7 @@ export function EditStateDialog({ profileId, initialValues }: Props) {
     defaultValues: {
       badges: initialValues.badges,
       deaths: initialValues.deaths,
+      wipes: initialValues.wipes,
       mvp: initialValues.mvp ?? '',
       notes: initialValues.notes ?? '',
     },
@@ -64,6 +67,7 @@ export function EditStateDialog({ profileId, initialValues }: Props) {
       reset({
         badges: initialValues.badges,
         deaths: initialValues.deaths,
+        wipes: initialValues.wipes,
         mvp: initialValues.mvp ?? '',
         notes: initialValues.notes ?? '',
       })
@@ -75,10 +79,10 @@ export function EditStateDialog({ profileId, initialValues }: Props) {
     startTransition(async () => {
       const result = await updateNuzlockeState(profileId, values)
       if (result.error) {
-        toast.error('Failed to save', { description: String(result.error) })
+        toast.error('Error al guardar', { description: String(result.error) })
         return
       }
-      toast.success('Profile updated')
+      toast.success('Perfil actualizado')
       setOpen(false)
     })
   }
@@ -93,23 +97,23 @@ export function EditStateDialog({ profileId, initialValues }: Props) {
         onClick={() => setOpen(true)}
       >
         <Pencil className="h-3.5 w-3.5" />
-        Edit
+        Editar
       </Button>
 
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Edit Nuzlocke State</DialogTitle>
+            <DialogTitle>Editar estado Nuzlocke</DialogTitle>
             <DialogDescription>
-              Update badges collected, deaths, MVP Pokémon, and run notes.
+              Actualiza medallas, muertes, wipes, Pokémon MVP y notas de tu partida.
             </DialogDescription>
           </DialogHeader>
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 py-2">
-            {/* Badges + Deaths */}
-            <div className="grid grid-cols-2 gap-4">
+            {/* Badges / Deaths / Wipes */}
+            <div className="grid grid-cols-3 gap-3">
               <div className="space-y-2">
-                <Label htmlFor="badges">Badges</Label>
+                <Label htmlFor="badges">Medallas</Label>
                 <Input
                   id="badges"
                   type="number"
@@ -124,7 +128,7 @@ export function EditStateDialog({ profileId, initialValues }: Props) {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="deaths">Deaths</Label>
+                <Label htmlFor="deaths">Muertes</Label>
                 <Input
                   id="deaths"
                   type="number"
@@ -136,14 +140,28 @@ export function EditStateDialog({ profileId, initialValues }: Props) {
                   <p className="text-xs text-destructive">{errors.deaths.message}</p>
                 )}
               </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="wipes">Wipes</Label>
+                <Input
+                  id="wipes"
+                  type="number"
+                  min={0}
+                  {...register('wipes', { valueAsNumber: true })}
+                  aria-invalid={!!errors.wipes}
+                />
+                {errors.wipes && (
+                  <p className="text-xs text-destructive">{errors.wipes.message}</p>
+                )}
+              </div>
             </div>
 
             {/* MVP */}
             <div className="space-y-2">
-              <Label htmlFor="mvp">MVP Pokémon</Label>
+              <Label htmlFor="mvp">Pokémon MVP</Label>
               <Input
                 id="mvp"
-                placeholder="e.g. Typhlosion"
+                placeholder="ej. Typhlosion"
                 {...register('mvp')}
                 aria-invalid={!!errors.mvp}
               />
@@ -154,10 +172,10 @@ export function EditStateDialog({ profileId, initialValues }: Props) {
 
             {/* Notes */}
             <div className="space-y-2">
-              <Label htmlFor="notes">Run Notes</Label>
+              <Label htmlFor="notes">Notas de la partida</Label>
               <Textarea
                 id="notes"
-                placeholder="Thoughts on your run, memorable moments…"
+                placeholder="Pensamientos sobre tu partida, momentos memorables…"
                 className="resize-none"
                 rows={4}
                 {...register('notes')}
@@ -175,11 +193,11 @@ export function EditStateDialog({ profileId, initialValues }: Props) {
                 onClick={() => onOpenChange(false)}
                 disabled={isPending}
               >
-                Cancel
+                Cancelar
               </Button>
               <Button type="submit" disabled={isPending}>
                 {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Save changes
+                Guardar cambios
               </Button>
             </DialogFooter>
           </form>

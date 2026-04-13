@@ -11,6 +11,7 @@ export interface Profile {
   status: UserStatus
   badges: number
   deaths: number
+  wipes: number
   team: string[]
   box: string[]
   mvp: string | null

@@ -8,12 +8,12 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     data: { user },
   } = await supabase.auth.getUser()
 
-  let profile: Pick<Profile, 'username' | 'role' | 'avatar_url'> | null = null
+  let profile: Pick<Profile, 'id' | 'username' | 'role' | 'avatar_url'> | null = null
 
   if (user) {
     const { data } = await supabase
       .from('profiles')
-      .select('username, role, avatar_url')
+      .select('id, username, role, avatar_url')
       .eq('id', user.id)
       .single()
     profile = data

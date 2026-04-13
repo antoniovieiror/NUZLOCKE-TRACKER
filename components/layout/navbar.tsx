@@ -14,7 +14,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import type { Profile } from '@/lib/types'
 
 interface NavbarProps {
-  user: Pick<Profile, 'username' | 'role' | 'avatar_url'> | null
+  user: Pick<Profile, 'id' | 'username' | 'role' | 'avatar_url'> | null
 }
 
 const navLinks = [
@@ -126,17 +126,20 @@ export function Navbar({ user }: NavbarProps) {
           )}
 
           {user && (
-            <div className="hidden sm:flex items-center gap-2 pl-1">
-              <Avatar className="h-6 w-6">
+            <Link
+              href={`/profile/${user.id}`}
+              className="hidden sm:flex items-center gap-2 pl-1 group"
+            >
+              <Avatar className="h-6 w-6 transition-transform duration-200 group-hover:scale-110">
                 <AvatarImage src={user.avatar_url ?? undefined} />
                 <AvatarFallback className="text-[10px] font-bold">
                   {user.username.slice(0, 2).toUpperCase()}
                 </AvatarFallback>
               </Avatar>
-              <span className="text-sm text-muted-foreground select-none">
+              <span className="text-sm text-muted-foreground group-hover:text-foreground transition-colors select-none">
                 {user.username}
               </span>
-            </div>
+            </Link>
           )}
 
           <Button

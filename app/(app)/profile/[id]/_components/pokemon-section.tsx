@@ -84,7 +84,7 @@ function PokemonCard({ name, editMode, onRemove }: PokemonCardProps) {
           <button
             onClick={onRemove}
             className="absolute -top-1.5 -right-1.5 z-10 flex items-center justify-center w-5 h-5 rounded-full bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive/90 transition-colors"
-            aria-label={`Remove ${name}`}
+            aria-label={`Eliminar ${name}`}
           >
             <X className="h-3 w-3" />
           </button>
@@ -165,10 +165,10 @@ function PokemonSearch({ onAdd, disabled, disabledReason }: PokemonSearchProps) 
           onChange={(e) => setQuery(e.target.value)}
           placeholder={
             disabled
-              ? disabledReason ?? 'Disabled'
+              ? disabledReason ?? 'Desactivado'
               : listReady
-              ? 'Search Pokémon…'
-              : 'Loading Pokédex…'
+              ? 'Buscar Pokémon…'
+              : 'Cargando Pokédex…'
           }
           disabled={disabled || !listReady}
           className="pl-8 text-sm"
@@ -179,9 +179,9 @@ function PokemonSearch({ onAdd, disabled, disabledReason }: PokemonSearchProps) 
         )}
       </div>
 
-      {/* Suggestions dropdown */}
+      {/* Suggestions dropdown — rendered above siblings via absolute+z */}
       {suggestions.length > 0 && (
-        <ul className="absolute z-20 mt-1 w-full bg-popover border rounded-lg shadow-md overflow-hidden">
+        <ul className="absolute z-50 mt-1 w-full bg-popover border rounded-lg shadow-lg overflow-hidden">
           {suggestions.map((name) => (
             <li key={name}>
               <button
@@ -221,7 +221,7 @@ function PokemonGrid({
   slots,
   addDisabled,
   addDisabledReason,
-  emptyMessage = 'Nothing here yet.',
+  emptyMessage = 'Nada aquí todavía.',
 }: PokemonGridProps) {
   // For team: always render `slots` cells (filled or empty)
   const cells = slots
@@ -292,13 +292,13 @@ export function PokemonSection({
 
   function addToTeam(name: string) {
     if (team.length >= 6) return
-    if (team.includes(name)) { toast.warning(`${name} is already in your team`); return }
+    if (team.includes(name)) { toast.warning(`${name} ya está en tu equipo`); return }
     const next = [...team, name]
     setTeam(next)
     startTransition(async () => {
       const result = await updateTeam(profileId, next)
       if (result.error) {
-        toast.error('Failed to update team', { description: String(result.error) })
+        toast.error('Error al actualizar el equipo', { description: String(result.error) })
         setTeam(team) // revert
       }
     })
@@ -310,7 +310,7 @@ export function PokemonSection({
     startTransition(async () => {
       const result = await updateTeam(profileId, next)
       if (result.error) {
-        toast.error('Failed to update team', { description: String(result.error) })
+        toast.error('Error al actualizar el equipo', { description: String(result.error) })
         setTeam(team) // revert
       }
     })
@@ -319,13 +319,13 @@ export function PokemonSection({
   // ── Box handlers ──
 
   function addToBox(name: string) {
-    if (box.includes(name)) { toast.warning(`${name} is already in your box`); return }
+    if (box.includes(name)) { toast.warning(`${name} ya está en tu caja`); return }
     const next = [...box, name]
     setBox(next)
     startTransition(async () => {
       const result = await updateBox(profileId, next)
       if (result.error) {
-        toast.error('Failed to update box', { description: String(result.error) })
+        toast.error('Error al actualizar la caja', { description: String(result.error) })
         setBox(box) // revert
       }
     })
@@ -337,7 +337,7 @@ export function PokemonSection({
     startTransition(async () => {
       const result = await updateBox(profileId, next)
       if (result.error) {
-        toast.error('Failed to update box', { description: String(result.error) })
+        toast.error('Error al actualizar la caja', { description: String(result.error) })
         setBox(box) // revert
       }
     })
@@ -345,11 +345,11 @@ export function PokemonSection({
 
   return (
     <div className="space-y-4">
-      {/* ── Team ── */}
-      <Card>
+      {/* ── Team ── overflow-visible overrides Card's built-in overflow-hidden so dropdown shows */}
+      <Card className="overflow-visible">
         <CardHeader className="pb-3 flex flex-row items-center justify-between gap-2">
           <div>
-            <CardTitle className="text-base">Active Team</CardTitle>
+            <CardTitle className="text-base">Equipo Activo</CardTitle>
             <p className="text-xs text-muted-foreground mt-0.5">
               {team.length}/6 Pokémon
             </p>
@@ -363,11 +363,11 @@ export function PokemonSection({
               className="gap-1.5 shrink-0"
             >
               {teamEditMode ? (
-                'Done'
+                'Listo'
               ) : (
                 <>
                   <Plus className="h-3.5 w-3.5" />
-                  Edit
+                  Editar
                 </>
               )}
             </Button>
@@ -375,25 +375,25 @@ export function PokemonSection({
         </CardHeader>
         <CardContent>
           <PokemonGrid
-            title="team"
+            title="equipo"
             pokemon={team}
             editMode={teamEditMode}
             onRemove={removeFromTeam}
             onAdd={addToTeam}
             slots={6}
             addDisabled={team.length >= 6}
-            addDisabledReason="Team is full (6/6)"
+            addDisabledReason="Equipo completo (6/6)"
           />
         </CardContent>
       </Card>
 
-      {/* ── Box ── */}
-      <Card>
+      {/* ── Box ── overflow-visible overrides Card's built-in overflow-hidden so dropdown shows */}
+      <Card className="overflow-visible">
         <CardHeader className="pb-3 flex flex-row items-center justify-between gap-2">
           <div>
-            <CardTitle className="text-base">PC Box</CardTitle>
+            <CardTitle className="text-base">Caja PC</CardTitle>
             <p className="text-xs text-muted-foreground mt-0.5">
-              {box.length} Pokémon stored
+              {box.length} Pokémon almacenados
             </p>
           </div>
           {canEdit && (
@@ -405,11 +405,11 @@ export function PokemonSection({
               className="gap-1.5 shrink-0"
             >
               {boxEditMode ? (
-                'Done'
+                'Listo'
               ) : (
                 <>
                   <Plus className="h-3.5 w-3.5" />
-                  Edit
+                  Editar
                 </>
               )}
             </Button>
@@ -417,12 +417,12 @@ export function PokemonSection({
         </CardHeader>
         <CardContent>
           <PokemonGrid
-            title="box"
+            title="caja"
             pokemon={box}
             editMode={boxEditMode}
             onRemove={removeFromBox}
             onAdd={addToBox}
-            emptyMessage="Box is empty. Add Pokémon that are part of your run but not on your active team."
+            emptyMessage="La caja está vacía. Añade Pokémon que formen parte de tu partida pero no estén en tu equipo activo."
           />
         </CardContent>
       </Card>

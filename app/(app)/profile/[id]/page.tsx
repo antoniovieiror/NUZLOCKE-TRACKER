@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { ChevronLeft, Skull, Shield, Star } from 'lucide-react'
+import { ChevronLeft, Skull, Shield, Star, Zap } from 'lucide-react'
 
 import { createClient } from '@/lib/supabase/server'
 import { cn } from '@/lib/utils'
@@ -121,7 +121,7 @@ export default async function ProfilePage({
         className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
       >
         <ChevronLeft className="h-4 w-4" />
-        Leaderboard
+        Clasificación
       </Link>
 
       {/* ── Profile header — gradient trainer card ── */}
@@ -152,18 +152,18 @@ export default async function ProfilePage({
               )}
               {profile.status === 'inactive' && (
                 <Badge variant="outline" className="text-muted-foreground">
-                  Inactive
+                  Inactivo
                 </Badge>
               )}
               {isOwnProfile && (
                 <Badge variant="outline" className="text-muted-foreground">
-                  You
+                  Tú
                 </Badge>
               )}
             </div>
             <p className="text-sm text-muted-foreground">
-              Trainer since{' '}
-              {new Date(profile.created_at).toLocaleDateString('en-US', {
+              Entrenador desde{' '}
+              {new Date(profile.created_at).toLocaleDateString('es-ES', {
                 year: 'numeric',
                 month: 'long',
               })}
@@ -175,31 +175,31 @@ export default async function ProfilePage({
       {/* ── Stats row ── */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <StatCard
-          label="Total Points"
+          label="Puntos Totales"
           value={stats?.total_points ?? 0}
-          sub="across all leagues"
+          sub="en todas las ligas"
           accent="text-amber-600 dark:text-amber-400"
           borderColor="bg-gradient-to-r from-amber-400 to-amber-500"
         />
         <StatCard
-          label="Wins"
+          label="Victorias"
           value={stats?.total_wins ?? 0}
           accent="text-green-600 dark:text-green-400"
           borderColor="bg-gradient-to-r from-green-400 to-emerald-500"
         />
         <StatCard
-          label="Losses"
+          label="Derrotas"
           value={stats?.total_losses ?? 0}
           accent="text-red-500 dark:text-red-400"
           borderColor="bg-gradient-to-r from-red-400 to-rose-500"
         />
         <StatCard
-          label="Winrate"
+          label="% Victorias"
           value={`${Number(stats?.winrate ?? 0).toFixed(1)}%`}
           sub={
             (stats?.total_wins ?? 0) + (stats?.total_losses ?? 0) > 0
-              ? `${(stats?.total_wins ?? 0) + (stats?.total_losses ?? 0)} matches played`
-              : 'No matches yet'
+              ? `${(stats?.total_wins ?? 0) + (stats?.total_losses ?? 0)} partidas jugadas`
+              : 'Sin partidas aún'
           }
           borderColor="bg-gradient-to-r from-violet-400 to-blue-500"
         />
@@ -211,13 +211,14 @@ export default async function ProfilePage({
         {/* Left: Nuzlocke state card */}
         <Card className="self-start">
           <CardHeader className="pb-3 flex flex-row items-center justify-between gap-2">
-            <CardTitle className="text-base">Nuzlocke State</CardTitle>
+            <CardTitle className="text-base">Estado Nuzlocke</CardTitle>
             {canEdit && (
               <EditStateDialog
                 profileId={profile.id}
                 initialValues={{
                   badges: profile.badges,
                   deaths: profile.deaths,
+                  wipes: profile.wipes,
                   mvp: profile.mvp,
                   notes: profile.notes,
                 }}
@@ -229,7 +230,7 @@ export default async function ProfilePage({
             {/* Gym badges */}
             <div className="space-y-1.5">
               <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                Gym Badges
+                Medallas de Gimnasio
               </p>
               <GymBadges count={profile.badges} />
             </div>
@@ -240,7 +241,7 @@ export default async function ProfilePage({
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 text-sm font-medium">
                 <Skull className="h-4 w-4 text-muted-foreground" />
-                Deaths
+                Muertes
               </div>
               <span
                 className={cn(
@@ -256,6 +257,26 @@ export default async function ProfilePage({
 
             <Separator />
 
+            {/* Wipes */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-sm font-medium">
+                <Zap className="h-4 w-4 text-muted-foreground" />
+                Wipes
+              </div>
+              <span
+                className={cn(
+                  'text-lg font-bold tabular-nums',
+                  profile.wipes > 0
+                    ? 'text-orange-500 dark:text-orange-400'
+                    : 'text-muted-foreground'
+                )}
+              >
+                {profile.wipes}
+              </span>
+            </div>
+
+            <Separator />
+
             {/* MVP */}
             <div className="space-y-1">
               <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground uppercase tracking-wide">
@@ -266,7 +287,7 @@ export default async function ProfilePage({
                 {profile.mvp ? (
                   profile.mvp.replace(/-/g, ' ')
                 ) : (
-                  <span className="text-muted-foreground italic">Not set</span>
+                  <span className="text-muted-foreground italic">Sin definir</span>
                 )}
               </p>
             </div>
@@ -276,14 +297,14 @@ export default async function ProfilePage({
             {/* Notes */}
             <div className="space-y-1">
               <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                Run Notes
+                Notas de la partida
               </p>
               {profile.notes ? (
                 <p className="text-sm leading-relaxed whitespace-pre-wrap break-words">
                   {profile.notes}
                 </p>
               ) : (
-                <p className="text-sm text-muted-foreground italic">No notes yet.</p>
+                <p className="text-sm text-muted-foreground italic">Sin notas todavía.</p>
               )}
             </div>
           </CardContent>

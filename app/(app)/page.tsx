@@ -64,25 +64,28 @@ function rowClass(rank: number) {
 
 const podiumConfig = {
   1: {
-    label: '1st Place',
+    label: '1er Lugar',
     card: 'border-amber-300/60 dark:border-amber-700/50 bg-gradient-to-b from-amber-50 to-amber-50/30 dark:from-amber-950/40 dark:to-transparent shadow-lg shadow-amber-100 dark:shadow-amber-900/20',
     accent: 'text-amber-700 dark:text-amber-400',
     ring: 'ring-2 ring-amber-300/60 dark:ring-amber-600/40 shadow-md shadow-amber-200/50 dark:shadow-amber-800/30',
     crown: true,
+    topMargin: 'mt-0',
   },
   2: {
-    label: '2nd Place',
+    label: '2do Lugar',
     card: 'border-slate-200/80 dark:border-slate-700/50 bg-gradient-to-b from-slate-50 to-slate-50/30 dark:from-slate-800/30 dark:to-transparent shadow-sm',
     accent: 'text-slate-600 dark:text-slate-400',
     ring: 'ring-1 ring-slate-200/80 dark:ring-slate-600/30',
     crown: false,
+    topMargin: 'mt-6',
   },
   3: {
-    label: '3rd Place',
+    label: '3er Lugar',
     card: 'border-orange-200/80 dark:border-orange-800/40 bg-gradient-to-b from-orange-50 to-orange-50/20 dark:from-orange-950/30 dark:to-transparent shadow-sm',
     accent: 'text-orange-700 dark:text-orange-400',
     ring: 'ring-1 ring-orange-200/80 dark:ring-orange-700/30',
     crown: false,
+    topMargin: 'mt-10',
   },
 } as const
 
@@ -90,7 +93,7 @@ function PodiumCard({ entry, rank }: { entry: LeaderboardEntry; rank: 1 | 2 | 3 
   const cfg = podiumConfig[rank]
 
   return (
-    <Link href={`/profile/${entry.id}`} className="block group">
+    <Link href={`/profile/${entry.id}`} className={cn('block group', cfg.topMargin)}>
       <Card className={cn('border transition-all duration-200 hover:-translate-y-1 hover:shadow-xl', cfg.card)}>
         <CardContent className="pt-4 pb-4 px-3 flex flex-col items-center text-center gap-2">
           <span className={cn('text-[11px] font-bold uppercase tracking-widest', cfg.accent)}>
@@ -122,9 +125,9 @@ function PodiumCard({ entry, rank }: { entry: LeaderboardEntry; rank: 1 | 2 | 3 
           </div>
 
           <p className="text-xs text-muted-foreground tabular-nums">
-            <span className="text-green-600 dark:text-green-400 font-medium">{entry.total_wins}W</span>
+            <span className="text-green-600 dark:text-green-400 font-medium">{entry.total_wins}V</span>
             {' — '}
-            <span className="text-red-500 dark:text-red-400 font-medium">{entry.total_losses}L</span>
+            <span className="text-red-500 dark:text-red-400 font-medium">{entry.total_losses}D</span>
             {' · '}
             {Number(entry.winrate).toFixed(1)}%
           </p>
@@ -152,9 +155,9 @@ function EmptyLeaderboard() {
         </div>
       </div>
       <div className="space-y-1.5">
-        <p className="text-base font-semibold">The arena is empty</p>
+        <p className="text-base font-semibold">La arena está vacía</p>
         <p className="text-sm text-muted-foreground max-w-xs mx-auto">
-          No trainers have entered yet. The admin needs to create player accounts to begin the tournament.
+          Ningún entrenador ha entrado aún. El admin debe crear cuentas de jugador para comenzar el torneo.
         </p>
       </div>
     </div>
@@ -170,6 +173,13 @@ export default async function HomePage() {
   const leaderboard = (data ?? []) as LeaderboardEntry[]
   const top3 = leaderboard.slice(0, 3) as (LeaderboardEntry & { rank: 1 | 2 | 3 })[]
 
+  // Classic Olympic podium order: 2nd (left) — 1st (center) — 3rd (right)
+  const podiumOrder = top3.length === 3
+    ? [top3[1], top3[0], top3[2]]
+    : top3.length === 2
+    ? [top3[1], top3[0]]
+    : top3
+
   return (
     <div className="space-y-6">
 
@@ -178,36 +188,40 @@ export default async function HomePage() {
         <div>
           <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
             <Trophy className="h-6 w-6 text-amber-500 shrink-0" />
-            Global Leaderboard
+            Clasificación Global
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Historical rankings across all leagues
-            {leaderboard.length > 0 && ` · ${leaderboard.length} trainers`}
+            Rankings históricos de todas las ligas
+            {leaderboard.length > 0 && ` · ${leaderboard.length} entrenadores`}
           </p>
         </div>
         <Link
           href="/league"
           className="text-sm text-primary hover:underline underline-offset-4 shrink-0 hidden sm:block mt-1 transition-opacity hover:opacity-80"
         >
-          Active league →
+          Liga activa →
         </Link>
       </div>
 
-      {/* ── Podium cards (top 3) ── */}
+      {/* ── Podium cards (top 3) — Olympic order: 2nd · 1st · 3rd ── */}
       {top3.length > 0 && (
-        <div className="grid grid-cols-3 gap-2 sm:gap-3">
-          {top3.map((entry, i) => (
-            <PodiumCard key={entry.id} entry={entry} rank={(i + 1) as 1 | 2 | 3} />
-          ))}
+        <div className="grid grid-cols-3 gap-2 sm:gap-3 items-end">
+          {podiumOrder.map((entry, i) => {
+            // Map display position back to actual rank
+            const rank = top3.findIndex((e) => e.id === entry.id) + 1
+            return (
+              <PodiumCard key={entry.id} entry={entry} rank={rank as 1 | 2 | 3} />
+            )
+          })}
         </div>
       )}
 
       {/* ── Full rankings table ── */}
       <Card className="shadow-sm">
         <CardHeader className="pb-3">
-          <CardTitle className="text-base">Full Rankings</CardTitle>
+          <CardTitle className="text-base">Clasificación completa</CardTitle>
           <CardDescription>
-            Tiebreaker: Points → Wins → Winrate → Alphabetical
+            Desempate: Puntos → Victorias → % Victorias → Alfabético
           </CardDescription>
         </CardHeader>
         <CardContent className="p-0">
@@ -219,10 +233,10 @@ export default async function HomePage() {
                 <TableHeader>
                   <TableRow className="hover:bg-transparent border-t">
                     <TableHead className="w-14 text-center pl-4">#</TableHead>
-                    <TableHead>Player</TableHead>
-                    <TableHead className="text-right">Points</TableHead>
-                    <TableHead className="text-right hidden md:table-cell">W — L</TableHead>
-                    <TableHead className="text-right pr-4 hidden sm:table-cell">Winrate</TableHead>
+                    <TableHead>Jugador</TableHead>
+                    <TableHead className="text-right">Puntos</TableHead>
+                    <TableHead className="text-right hidden md:table-cell">V — D</TableHead>
+                    <TableHead className="text-right pr-4 hidden sm:table-cell">% Victorias</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -259,7 +273,7 @@ export default async function HomePage() {
                               </p>
                               {entry.status === 'inactive' && (
                                 <p className="text-[11px] text-muted-foreground leading-tight">
-                                  inactive
+                                  inactivo
                                 </p>
                               )}
                             </div>
@@ -299,7 +313,7 @@ export default async function HomePage() {
 
       {error && (
         <p className="text-xs text-destructive text-center">
-          Failed to load leaderboard: {error.message}
+          Error al cargar clasificación: {error.message}
         </p>
       )}
     </div>
