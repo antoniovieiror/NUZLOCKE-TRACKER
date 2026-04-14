@@ -1,33 +1,166 @@
 import Link from 'next/link'
-import { Trophy, Crown, Medal, ChevronRight } from 'lucide-react'
+import { Trophy, Crown, ChevronRight } from 'lucide-react'
 
 import { createClient } from '@/lib/supabase/server'
 import { cn } from '@/lib/utils'
 import type { LeaderboardEntry } from '@/lib/types'
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table'
+
+// ─── Arena Hero Banner (inline SVG art) ───────────────────────────────────────
+
+function ArenaHero({ trainerCount }: { trainerCount: number }) {
+  return (
+    <div className="relative overflow-hidden rounded-2xl border border-white/5 mb-6 h-52 sm:h-64">
+      {/* SVG Scene */}
+      <svg
+        className="absolute inset-0 w-full h-full"
+        viewBox="0 0 1200 280"
+        preserveAspectRatio="xMidYMid slice"
+        aria-hidden
+      >
+        <defs>
+          <radialGradient id="arenaCenter" cx="50%" cy="75%" r="55%">
+            <stop offset="0%" stopColor="#F59E0B" stopOpacity="0.18"/>
+            <stop offset="45%" stopColor="#3B82F6" stopOpacity="0.06"/>
+            <stop offset="100%" stopColor="#0A0C14" stopOpacity="0"/>
+          </radialGradient>
+          <radialGradient id="platformLight" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stopColor="#F59E0B" stopOpacity="0.55"/>
+            <stop offset="60%" stopColor="#F59E0B" stopOpacity="0.10"/>
+            <stop offset="100%" stopColor="#F59E0B" stopOpacity="0"/>
+          </radialGradient>
+          <radialGradient id="leftGlow" cx="0%" cy="60%" r="60%">
+            <stop offset="0%" stopColor="#3B82F6" stopOpacity="0.12"/>
+            <stop offset="100%" stopColor="#3B82F6" stopOpacity="0"/>
+          </radialGradient>
+          <radialGradient id="rightGlow" cx="100%" cy="60%" r="60%">
+            <stop offset="0%" stopColor="#8B5CF6" stopOpacity="0.10"/>
+            <stop offset="100%" stopColor="#8B5CF6" stopOpacity="0"/>
+          </radialGradient>
+          <linearGradient id="skyGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#050810"/>
+            <stop offset="100%" stopColor="#0C1220"/>
+          </linearGradient>
+          <linearGradient id="mountainFar" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#0E142A"/>
+            <stop offset="100%" stopColor="#080B16"/>
+          </linearGradient>
+          <linearGradient id="mountainMid" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#0A0E1E"/>
+            <stop offset="100%" stopColor="#060810"/>
+          </linearGradient>
+          <filter id="blur4">
+            <feGaussianBlur stdDeviation="4"/>
+          </filter>
+          <filter id="blur8">
+            <feGaussianBlur stdDeviation="8"/>
+          </filter>
+        </defs>
+
+        {/* Sky */}
+        <rect width="1200" height="280" fill="url(#skyGrad)"/>
+
+        {/* Side glows */}
+        <rect width="1200" height="280" fill="url(#leftGlow)"/>
+        <rect width="1200" height="280" fill="url(#rightGlow)"/>
+
+        {/* Center arena glow */}
+        <rect width="1200" height="280" fill="url(#arenaCenter)"/>
+
+        {/* Topographic contour lines */}
+        <g stroke="rgba(255,255,255,0.028)" strokeWidth="0.8" fill="none">
+          <ellipse cx="600" cy="200" rx="480" ry="180"/>
+          <ellipse cx="600" cy="200" rx="400" ry="150"/>
+          <ellipse cx="600" cy="200" rx="320" ry="118"/>
+          <ellipse cx="600" cy="200" rx="240" ry="88"/>
+          <ellipse cx="600" cy="200" rx="160" ry="58"/>
+          <ellipse cx="600" cy="200" rx="90" ry="32"/>
+        </g>
+        <g stroke="rgba(96,165,250,0.015)" strokeWidth="1" fill="none">
+          <ellipse cx="600" cy="200" rx="360" ry="132"/>
+          <ellipse cx="600" cy="200" rx="200" ry="72"/>
+        </g>
+
+        {/* Distant mountains (far layer) */}
+        <path
+          d="M0,280 L60,210 L120,230 L200,185 L280,205 L360,165 L440,190 L510,148 L580,172 L640,145 L700,168 L770,138 L840,160 L920,130 L1000,155 L1080,125 L1140,148 L1200,135 L1200,280Z"
+          fill="url(#mountainFar)"
+        />
+
+        {/* Mid mountains */}
+        <path
+          d="M0,280 L80,240 L160,258 L260,215 L360,238 L470,195 L560,222 L660,188 L760,215 L870,175 L970,205 L1060,172 L1140,195 L1200,180 L1200,280Z"
+          fill="url(#mountainMid)"
+        />
+
+        {/* Light beams from platform center */}
+        <g opacity="0.06" filter="url(#blur8)">
+          <line x1="600" y1="260" x2="250" y2="0" stroke="#F59E0B" strokeWidth="60"/>
+          <line x1="600" y1="260" x2="600" y2="0" stroke="#F59E0B" strokeWidth="80"/>
+          <line x1="600" y1="260" x2="950" y2="0" stroke="#F59E0B" strokeWidth="60"/>
+        </g>
+
+        {/* Stars */}
+        {[
+          [120,40],[200,20],[350,55],[480,18],[680,30],[820,15],[950,45],[1080,22],[1150,58],
+          [80,80],[300,70],[550,65],[750,72],[1000,68],[100,28],[420,35],[700,48],[1100,35],
+        ].map(([x,y],i) => (
+          <circle key={i} cx={x} cy={y} r={Math.random() > 0.5 ? 0.8 : 0.5} fill="white" opacity={0.3 + (i % 4) * 0.12}/>
+        ))}
+
+        {/* Platform base glow */}
+        <ellipse cx="600" cy="265" rx="160" ry="14" fill="url(#platformLight)" filter="url(#blur4)"/>
+
+        {/* Platform ring */}
+        <ellipse cx="600" cy="265" rx="100" ry="8" fill="none" stroke="#F59E0B" strokeWidth="0.8" opacity="0.35"/>
+        <ellipse cx="600" cy="265" rx="70" ry="5.5" fill="none" stroke="#F59E0B" strokeWidth="0.5" opacity="0.25"/>
+
+        {/* Pokeball subtle watermark */}
+        <circle cx="600" cy="175" r="55" fill="none" stroke="rgba(255,255,255,0.04)" strokeWidth="1"/>
+        <circle cx="600" cy="175" r="44" fill="none" stroke="rgba(255,255,255,0.03)" strokeWidth="1"/>
+        <line x1="545" y1="175" x2="655" y2="175" stroke="rgba(255,255,255,0.035)" strokeWidth="0.8"/>
+        <circle cx="600" cy="175" r="11" fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="1"/>
+        <circle cx="600" cy="175" r="6" fill="rgba(255,255,255,0.04)"/>
+
+        {/* Foreground fade to background color */}
+        <rect width="1200" height="280" fill="url(#skyGrad)" opacity="0.15"/>
+      </svg>
+
+      {/* Text overlay */}
+      <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-4">
+        <p className="text-[10px] sm:text-xs font-black uppercase tracking-[0.35em] text-amber-400/80 mb-3">
+          Campeonato Nuzlocke
+        </p>
+        <h1 className="text-4xl sm:text-5xl font-black tracking-tighter leading-none mb-2">
+          <span className="text-white/90">CLASIFICACIÓN</span>
+          <br/>
+          <span className="bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 bg-clip-text text-transparent drop-shadow-[0_0_20px_rgba(245,158,11,0.4)]">
+            GLOBAL
+          </span>
+        </h1>
+        <p className="text-xs text-white/30 font-medium tracking-widest uppercase mt-1">
+          Rankings históricos · todas las ligas
+          {trainerCount > 0 && ` · ${trainerCount} entrenadores`}
+        </p>
+      </div>
+
+      {/* Bottom fade */}
+      <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-background to-transparent" />
+    </div>
+  )
+}
 
 // ─── Rank badge ────────────────────────────────────────────────────────────────
 
 function RankBadge({ rank }: { rank: number }) {
   if (rank === 1)
     return (
-      <span className="inline-flex items-center justify-center w-7 h-7 rounded-full text-xs font-black shrink-0 bg-gradient-to-br from-amber-300 to-amber-500 text-amber-950 shadow shadow-amber-400/40">
+      <span className="inline-flex items-center justify-center w-7 h-7 rounded-full text-xs font-black shrink-0 bg-gradient-to-br from-amber-300 to-amber-500 text-amber-950 shadow shadow-amber-400/50">
         1
       </span>
     )
@@ -43,7 +176,6 @@ function RankBadge({ rank }: { rank: number }) {
         3
       </span>
     )
-
   return (
     <span className="inline-flex items-center justify-center w-7 text-sm text-muted-foreground tabular-nums font-medium">
       {rank}
@@ -55,7 +187,7 @@ function RankBadge({ rank }: { rank: number }) {
 
 function rowClass(rank: number) {
   if (rank === 1) return 'bg-amber-50/70 dark:bg-amber-950/20 hover:bg-amber-50 dark:hover:bg-amber-950/30'
-  if (rank === 2) return 'bg-slate-50/60 dark:bg-slate-900/15 hover:bg-slate-50 dark:hover:bg-slate-900/25'
+  if (rank === 2) return 'bg-slate-50/50 dark:bg-slate-900/15 hover:bg-slate-50 dark:hover:bg-slate-900/25'
   if (rank === 3) return 'bg-orange-50/40 dark:bg-orange-950/12 hover:bg-orange-50 dark:hover:bg-orange-950/20'
   return 'hover:bg-muted/40'
 }
@@ -65,93 +197,82 @@ function rowClass(rank: number) {
 const podiumConfig = {
   1: {
     label: '1er Lugar',
-    card: 'border-amber-300/50 dark:border-amber-600/35 bg-gradient-to-b from-amber-50/80 to-white dark:from-amber-950/30 dark:to-card shadow-lg shadow-amber-100/80 dark:shadow-amber-900/20',
+    card: 'border-amber-300/50 dark:border-amber-600/30 bg-gradient-to-b from-amber-50/90 to-white dark:from-amber-950/35 dark:to-card shadow-xl shadow-amber-100/80 dark:shadow-amber-900/25',
     accent: 'text-amber-700 dark:text-amber-400',
-    avatarRing: 'ring-2 ring-amber-300/70 dark:ring-amber-500/50 shadow-md shadow-amber-200/60 dark:shadow-amber-800/30',
-    glow: 'rank-glow-gold',
+    avatarRing: 'ring-2 ring-amber-300/70 dark:ring-amber-500/50',
+    topAccent: 'bg-gradient-to-r from-amber-300 via-amber-400 to-amber-300',
     crown: true,
     topMargin: 'mt-0',
-    avatarSize: 'h-14 w-14 sm:h-16 sm:w-16',
-    pointsClass: 'text-2xl font-black text-amber-700 dark:text-amber-400',
-    topAccent: 'h-0.5 w-full bg-gradient-to-r from-transparent via-amber-400/60 to-transparent',
+    avatarSize: 'h-16 w-16 sm:h-18 sm:w-18',
+    pointsClass: 'text-3xl font-black text-amber-700 dark:text-amber-400',
+    glow: 'rank-glow-gold',
   },
   2: {
     label: '2do Lugar',
-    card: 'border-slate-200/70 dark:border-slate-600/30 bg-gradient-to-b from-slate-50/60 to-white dark:from-slate-800/20 dark:to-card shadow-sm',
+    card: 'border-slate-200/60 dark:border-slate-600/25 bg-gradient-to-b from-slate-50/70 to-white dark:from-slate-800/20 dark:to-card shadow-md',
     accent: 'text-slate-600 dark:text-slate-400',
-    avatarRing: 'ring-1 ring-slate-300/70 dark:ring-slate-600/40',
-    glow: 'rank-glow-silver',
+    avatarRing: 'ring-1 ring-slate-300/60 dark:ring-slate-600/35',
+    topAccent: 'bg-gradient-to-r from-slate-300 via-slate-400 to-slate-300 dark:from-slate-600 dark:via-slate-500 dark:to-slate-600',
     crown: false,
     topMargin: 'mt-8',
-    avatarSize: 'h-12 w-12 sm:h-14 sm:w-14',
-    pointsClass: 'text-xl font-black text-slate-700 dark:text-slate-300',
-    topAccent: 'h-px w-full bg-gradient-to-r from-transparent via-slate-400/40 to-transparent',
+    avatarSize: 'h-13 w-13 sm:h-15 sm:w-15',
+    pointsClass: 'text-2xl font-black text-slate-700 dark:text-slate-300',
+    glow: 'rank-glow-silver',
   },
   3: {
     label: '3er Lugar',
-    card: 'border-orange-200/70 dark:border-orange-800/30 bg-gradient-to-b from-orange-50/50 to-white dark:from-orange-950/20 dark:to-card shadow-sm',
+    card: 'border-orange-200/60 dark:border-orange-800/25 bg-gradient-to-b from-orange-50/60 to-white dark:from-orange-950/20 dark:to-card shadow-md',
     accent: 'text-orange-700 dark:text-orange-400',
-    avatarRing: 'ring-1 ring-orange-300/70 dark:ring-orange-700/35',
-    glow: 'rank-glow-bronze',
+    avatarRing: 'ring-1 ring-orange-300/60 dark:ring-orange-700/30',
+    topAccent: 'bg-gradient-to-r from-orange-300 via-amber-400 to-orange-300 dark:from-orange-700 dark:via-amber-600 dark:to-orange-700',
     crown: false,
     topMargin: 'mt-14',
-    avatarSize: 'h-12 w-12 sm:h-14 sm:w-14',
-    pointsClass: 'text-xl font-black text-orange-700 dark:text-orange-400',
-    topAccent: 'h-px w-full bg-gradient-to-r from-transparent via-orange-400/40 to-transparent',
+    avatarSize: 'h-13 w-13 sm:h-15 sm:w-15',
+    pointsClass: 'text-2xl font-black text-orange-700 dark:text-orange-400',
+    glow: 'rank-glow-bronze',
   },
 } as const
 
 function PodiumCard({ entry, rank }: { entry: LeaderboardEntry; rank: 1 | 2 | 3 }) {
   const cfg = podiumConfig[rank]
-
   return (
     <Link href={`/profile/${entry.id}`} className={cn('block group', cfg.topMargin)}>
-      <Card className={cn(
-        'border transition-all duration-250 overflow-hidden',
-        cfg.card,
-        'hover:-translate-y-1.5 hover:shadow-xl',
-        rank === 1 && 'dark:hover:shadow-amber-900/30',
-      )}>
-        <div className={cfg.topAccent} />
-        <CardContent className="pt-4 pb-4 px-3 flex flex-col items-center text-center gap-2.5">
-
-          {/* Rank label */}
-          <span className={cn('text-[10px] font-black uppercase tracking-[0.18em]', cfg.accent)}>
+      <Card className={cn('border transition-all duration-200 overflow-hidden hover:-translate-y-1.5 hover:shadow-2xl', cfg.card)}>
+        {/* Colored top accent bar */}
+        <div className={cn('h-1', cfg.topAccent)} />
+        <CardContent className="pt-4 pb-5 px-3 flex flex-col items-center text-center gap-3">
+          <span className={cn('text-[9px] font-black uppercase tracking-[0.2em]', cfg.accent)}>
             {cfg.label}
           </span>
-
-          {/* Avatar */}
           <div className="relative">
-            <Avatar className={cn(cfg.avatarSize, 'transition-transform duration-200 group-hover:scale-105', cfg.avatarRing, rank === 1 && cfg.glow)}>
+            <Avatar className={cn(
+              'h-14 w-14 transition-transform duration-200 group-hover:scale-105',
+              cfg.avatarRing,
+              rank === 1 ? cfg.glow : ''
+            )}>
               <AvatarImage src={entry.avatar_url ?? undefined} alt={entry.username} />
-              <AvatarFallback className="text-sm font-bold">
-                {entry.username.slice(0, 2).toUpperCase()}
-              </AvatarFallback>
+              <AvatarFallback className="text-sm font-black">{entry.username.slice(0, 2).toUpperCase()}</AvatarFallback>
             </Avatar>
             {cfg.crown && (
-              <div className="absolute -top-3.5 left-1/2 -translate-x-1/2">
-                <Crown className="h-4 w-4 text-amber-500 dark:text-amber-400 fill-amber-400 dark:fill-amber-400" strokeWidth={1} />
+              <div className="absolute -top-4 left-1/2 -translate-x-1/2">
+                <Crown className="h-4 w-4 text-amber-500 fill-amber-400" strokeWidth={0.5}/>
               </div>
             )}
           </div>
-
-          {/* Name + Points */}
           <div className="space-y-0.5">
-            <p className="font-bold text-sm leading-tight group-hover:underline underline-offset-4 truncate max-w-[90px] sm:max-w-[120px]">
+            <p className="font-bold text-sm leading-tight group-hover:underline underline-offset-4 truncate max-w-[88px] sm:max-w-[110px]">
               {entry.username}
             </p>
             <p className={cfg.pointsClass}>
               {entry.total_points}
-              <span className="text-xs font-normal ml-0.5 opacity-70">pts</span>
+              <span className="text-xs font-normal ml-0.5 opacity-60">pts</span>
             </p>
           </div>
-
-          {/* W / D / % */}
           <p className="text-[11px] text-muted-foreground tabular-nums">
-            <span className="text-green-600 dark:text-green-400 font-semibold">{entry.total_wins}V</span>
-            <span className="mx-1 opacity-40">·</span>
-            <span className="text-red-500 dark:text-red-400 font-semibold">{entry.total_losses}D</span>
-            <span className="mx-1 opacity-40">·</span>
+            <span className="text-green-600 dark:text-green-400 font-bold">{entry.total_wins}V</span>
+            <span className="mx-1 opacity-30">·</span>
+            <span className="text-red-500 dark:text-red-400 font-bold">{entry.total_losses}D</span>
+            <span className="mx-1 opacity-30">·</span>
             {Number(entry.winrate).toFixed(0)}%
           </p>
         </CardContent>
@@ -165,22 +286,21 @@ function PodiumCard({ entry, rank }: { entry: LeaderboardEntry; rank: 1 | 2 | 3 
 function EmptyLeaderboard() {
   return (
     <div className="py-24 text-center space-y-5">
-      {/* CSS Pokéball */}
       <div className="flex justify-center" aria-hidden>
-        <div className="relative w-20 h-20 opacity-15">
+        <div className="relative w-20 h-20 opacity-12">
           <div className="absolute inset-0 rounded-full border-[3px] border-foreground overflow-hidden">
-            <div className="absolute inset-x-0 top-0 h-1/2 bg-red-500 dark:bg-red-400" />
-            <div className="absolute inset-x-0 bottom-0 h-1/2 bg-white dark:bg-slate-300" />
-            <div className="absolute inset-x-0 top-1/2 h-px bg-foreground -translate-y-px" />
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-6 h-6 rounded-full border-[2.5px] border-foreground bg-white dark:bg-slate-200 z-10" />
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full bg-foreground z-20" />
+            <div className="absolute inset-x-0 top-0 h-1/2 bg-red-500"/>
+            <div className="absolute inset-x-0 bottom-0 h-1/2 bg-white dark:bg-slate-300"/>
+            <div className="absolute inset-x-0 top-1/2 h-px bg-foreground -translate-y-px"/>
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-6 h-6 rounded-full border-[2.5px] border-foreground bg-white dark:bg-slate-200 z-10"/>
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full bg-foreground z-20"/>
           </div>
         </div>
       </div>
       <div className="space-y-1.5">
-        <p className="text-base font-semibold tracking-tight">La arena está vacía</p>
+        <p className="text-base font-bold">La arena está vacía</p>
         <p className="text-sm text-muted-foreground max-w-xs mx-auto leading-relaxed">
-          Ningún entrenador ha entrado aún. El admin debe crear cuentas de jugador para comenzar el torneo.
+          Ningún entrenador ha entrado aún. El admin debe crear cuentas de jugador para comenzar.
         </p>
       </div>
     </div>
@@ -196,7 +316,6 @@ export default async function HomePage() {
   const leaderboard = (data ?? []) as LeaderboardEntry[]
   const top3 = leaderboard.slice(0, 3) as (LeaderboardEntry & { rank: 1 | 2 | 3 })[]
 
-  // Olympic podium order: 2nd (left) — 1st (center) — 3rd (right)
   const podiumOrder = top3.length === 3
     ? [top3[1], top3[0], top3[2]]
     : top3.length === 2
@@ -204,130 +323,85 @@ export default async function HomePage() {
     : top3
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
 
-      {/* ── Header ── */}
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2.5 mb-1">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-amber-400 to-amber-600 shadow-sm shadow-amber-500/25">
-              <Trophy className="h-4 w-4 text-white" strokeWidth={2} />
-            </div>
-            <h1 className="text-2xl font-black tracking-tight">
-              Clasificación Global
-            </h1>
-          </div>
-          <p className="text-sm text-muted-foreground ml-10.5">
-            Rankings históricos de todas las ligas
-            {leaderboard.length > 0 && (
-              <span className="ml-1 text-muted-foreground/60">· {leaderboard.length} entrenadores</span>
-            )}
-          </p>
-        </div>
-        <Link
-          href="/league"
-          className="hidden sm:flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors mt-1 shrink-0"
-        >
+      {/* ── Championship Arena Hero ── */}
+      <ArenaHero trainerCount={leaderboard.length} />
+
+      {/* ── Liga activa link ── */}
+      <div className="flex justify-end -mt-2">
+        <Link href="/league" className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors font-medium">
           Liga activa
-          <ChevronRight className="h-3.5 w-3.5" />
+          <ChevronRight className="h-3.5 w-3.5"/>
         </Link>
       </div>
 
-      {/* ── Podium (top 3) — Olympic order ── */}
+      {/* ── Podium (top 3) ── */}
       {top3.length > 0 && (
         <div className="grid grid-cols-3 gap-2 sm:gap-3 items-end">
           {podiumOrder.map((entry) => {
             const rank = top3.findIndex((e) => e.id === entry.id) + 1
-            return (
-              <PodiumCard key={entry.id} entry={entry} rank={rank as 1 | 2 | 3} />
-            )
+            return <PodiumCard key={entry.id} entry={entry} rank={rank as 1 | 2 | 3}/>
           })}
         </div>
       )}
 
       {/* ── Full rankings table ── */}
       <Card className="shadow-sm overflow-hidden">
-        <CardHeader className="pb-3 border-b border-border/50">
-          <CardTitle className="text-base font-bold">Clasificación completa</CardTitle>
-          <CardDescription className="text-xs">
-            Desempate: Puntos → Victorias → % Victorias → Alfabético
-          </CardDescription>
+        <CardHeader className="pb-3 border-b border-border/40">
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-amber-400 to-amber-600 shadow-sm shadow-amber-500/25 shrink-0">
+              <Trophy className="h-3.5 w-3.5 text-white" strokeWidth={2}/>
+            </div>
+            <div>
+              <CardTitle className="text-sm font-bold">Clasificación completa</CardTitle>
+              <CardDescription className="text-[11px]">Desempate: Puntos → Victorias → % Victorias → Alfabético</CardDescription>
+            </div>
+          </div>
         </CardHeader>
         <CardContent className="p-0">
           {leaderboard.length === 0 ? (
-            <EmptyLeaderboard />
+            <EmptyLeaderboard/>
           ) : (
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
-                  <TableRow className="hover:bg-transparent border-none">
-                    <TableHead className="w-14 text-center pl-4 text-[11px] font-bold uppercase tracking-wide text-muted-foreground/70">#</TableHead>
-                    <TableHead className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground/70">Jugador</TableHead>
-                    <TableHead className="text-right text-[11px] font-bold uppercase tracking-wide text-muted-foreground/70">Puntos</TableHead>
-                    <TableHead className="text-right hidden md:table-cell text-[11px] font-bold uppercase tracking-wide text-muted-foreground/70">V — D</TableHead>
-                    <TableHead className="text-right pr-4 hidden sm:table-cell text-[11px] font-bold uppercase tracking-wide text-muted-foreground/70">%</TableHead>
+                  <TableRow className="hover:bg-transparent border-none bg-muted/30">
+                    <TableHead className="w-14 text-center pl-4 text-[10px] font-black uppercase tracking-wide text-muted-foreground/60 py-2.5">#</TableHead>
+                    <TableHead className="text-[10px] font-black uppercase tracking-wide text-muted-foreground/60 py-2.5">Jugador</TableHead>
+                    <TableHead className="text-right text-[10px] font-black uppercase tracking-wide text-muted-foreground/60 py-2.5">Puntos</TableHead>
+                    <TableHead className="text-right hidden md:table-cell text-[10px] font-black uppercase tracking-wide text-muted-foreground/60 py-2.5">V — D</TableHead>
+                    <TableHead className="text-right pr-4 hidden sm:table-cell text-[10px] font-black uppercase tracking-wide text-muted-foreground/60 py-2.5">%</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {leaderboard.map((entry, index) => {
                     const rank = index + 1
                     return (
-                      <TableRow
-                        key={entry.id}
-                        className={cn('transition-all duration-150 border-border/40', rowClass(rank))}
-                      >
-                        {/* Rank */}
-                        <TableCell className="text-center pl-4">
-                          <RankBadge rank={rank} />
-                        </TableCell>
-
-                        {/* Player */}
-                        <TableCell>
-                          <Link
-                            href={`/profile/${entry.id}`}
-                            className="flex items-center gap-3 group w-fit"
-                          >
+                      <TableRow key={entry.id} className={cn('transition-all duration-150 border-border/30', rowClass(rank))}>
+                        <TableCell className="text-center pl-4 py-3"><RankBadge rank={rank}/></TableCell>
+                        <TableCell className="py-3">
+                          <Link href={`/profile/${entry.id}`} className="flex items-center gap-3 group w-fit">
                             <Avatar className="h-8 w-8 shrink-0 ring-1 ring-border/40 transition-all duration-200 group-hover:scale-105 group-hover:ring-amber-400/40">
-                              <AvatarImage
-                                src={entry.avatar_url ?? undefined}
-                                alt={entry.username}
-                              />
-                              <AvatarFallback className="text-xs font-bold">
-                                {entry.username.slice(0, 2).toUpperCase()}
-                              </AvatarFallback>
+                              <AvatarImage src={entry.avatar_url ?? undefined} alt={entry.username}/>
+                              <AvatarFallback className="text-xs font-bold">{entry.username.slice(0, 2).toUpperCase()}</AvatarFallback>
                             </Avatar>
                             <div className="min-w-0">
-                              <p className="font-semibold text-sm leading-tight group-hover:underline underline-offset-4 truncate">
-                                {entry.username}
-                              </p>
-                              {entry.status === 'inactive' && (
-                                <p className="text-[11px] text-muted-foreground/60 leading-tight">
-                                  inactivo
-                                </p>
-                              )}
+                              <p className="font-semibold text-sm leading-tight group-hover:underline underline-offset-4 truncate">{entry.username}</p>
+                              {entry.status === 'inactive' && <p className="text-[11px] text-muted-foreground/60 leading-tight">inactivo</p>}
                             </div>
                           </Link>
                         </TableCell>
-
-                        {/* Points */}
-                        <TableCell className="text-right">
+                        <TableCell className="text-right py-3">
                           <span className="font-black tabular-nums">{entry.total_points}</span>
                           <span className="text-muted-foreground text-xs ml-1">pts</span>
                         </TableCell>
-
-                        {/* W — L */}
-                        <TableCell className="text-right hidden md:table-cell tabular-nums text-sm">
-                          <span className="text-green-600 dark:text-green-400 font-semibold">
-                            {entry.total_wins}
-                          </span>
-                          <span className="text-muted-foreground/50 mx-1.5">—</span>
-                          <span className="text-red-500 dark:text-red-400 font-semibold">
-                            {entry.total_losses}
-                          </span>
+                        <TableCell className="text-right hidden md:table-cell tabular-nums text-sm py-3">
+                          <span className="text-green-600 dark:text-green-400 font-bold">{entry.total_wins}</span>
+                          <span className="text-muted-foreground/40 mx-1.5">—</span>
+                          <span className="text-red-500 dark:text-red-400 font-bold">{entry.total_losses}</span>
                         </TableCell>
-
-                        {/* Winrate */}
-                        <TableCell className="text-right pr-4 hidden sm:table-cell tabular-nums text-sm text-muted-foreground">
+                        <TableCell className="text-right pr-4 hidden sm:table-cell tabular-nums text-sm text-muted-foreground py-3">
                           {Number(entry.winrate).toFixed(1)}%
                         </TableCell>
                       </TableRow>
@@ -340,11 +414,7 @@ export default async function HomePage() {
         </CardContent>
       </Card>
 
-      {error && (
-        <p className="text-xs text-destructive text-center">
-          Error al cargar clasificación: {error.message}
-        </p>
-      )}
+      {error && <p className="text-xs text-destructive text-center">Error: {error.message}</p>}
     </div>
   )
 }

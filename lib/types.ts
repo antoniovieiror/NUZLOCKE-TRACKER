@@ -3,6 +3,7 @@ export type UserStatus = 'active' | 'inactive'
 export type LeagueStatus = 'active' | 'closed'
 export type MatchStatus = 'pending' | 'validated' | 'disputed' | 'voided' | 'admin_resolved'
 export type Vote = 'win_a' | 'win_b'
+export type SaveSyncStatus = 'synced' | 'failed' | 'never'
 
 export interface PokemonEntry {
   species: string   // lowercase PokéAPI name, e.g. "charizard"
@@ -22,6 +23,9 @@ export interface Profile {
   mvp: string | null
   notes: string | null
   avatar_url: string | null
+  save_synced_at: string | null
+  save_sync_status: SaveSyncStatus
+  save_parse_error: string | null
   created_at: string
   updated_at: string
 }

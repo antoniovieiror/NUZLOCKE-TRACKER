@@ -321,6 +321,130 @@ function ProgressBar({ done, total }: { done: number; total: number }) {
   )
 }
 
+// ─── League hero banner ────────────────────────────────────────────────────────
+
+function LeagueHero({ title, subtitle, inactive }: { title: string; subtitle: string; inactive?: boolean }) {
+  return (
+    <div className="relative rounded-2xl overflow-hidden border border-white/8 shadow-xl">
+      <svg
+        className="absolute inset-0 w-full h-full"
+        viewBox="0 0 1200 220"
+        preserveAspectRatio="xMidYMid slice"
+        aria-hidden
+      >
+        <defs>
+          <linearGradient id="lgBase" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stopColor="#080B18"/>
+            <stop offset="100%" stopColor="#040610"/>
+          </linearGradient>
+          <radialGradient id="lgLeft" cx="10%" cy="50%" r="55%">
+            <stop offset="0%" stopColor={inactive ? '#6B7280' : '#F59E0B'} stopOpacity="0.12"/>
+            <stop offset="100%" stopColor="#F59E0B" stopOpacity="0"/>
+          </radialGradient>
+          <radialGradient id="lgRight" cx="90%" cy="50%" r="55%">
+            <stop offset="0%" stopColor={inactive ? '#6B7280' : '#F59E0B'} stopOpacity="0.10"/>
+            <stop offset="100%" stopColor="#F59E0B" stopOpacity="0"/>
+          </radialGradient>
+          <radialGradient id="lgCenter" cx="50%" cy="100%" r="50%">
+            <stop offset="0%" stopColor={inactive ? '#4B5563' : '#F59E0B'} stopOpacity="0.22"/>
+            <stop offset="100%" stopColor="#F59E0B" stopOpacity="0"/>
+          </radialGradient>
+          <linearGradient id="lgMtn1" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#0D1226"/>
+            <stop offset="100%" stopColor="#080B18"/>
+          </linearGradient>
+          <linearGradient id="lgMtn2" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#0A0E1E"/>
+            <stop offset="100%" stopColor="#05070E"/>
+          </linearGradient>
+          <filter id="lgBlur">
+            <feGaussianBlur stdDeviation="8"/>
+          </filter>
+          <filter id="lgBlurSm">
+            <feGaussianBlur stdDeviation="3"/>
+          </filter>
+        </defs>
+
+        <rect width="1200" height="220" fill="url(#lgBase)"/>
+        <rect width="1200" height="220" fill="url(#lgLeft)"/>
+        <rect width="1200" height="220" fill="url(#lgRight)"/>
+        <rect width="1200" height="220" fill="url(#lgCenter)"/>
+
+        {/* Stars */}
+        {[[60,18],[130,12],[250,22],[400,10],[580,16],[750,8],[900,20],[1050,14],[1140,25],[180,35],[520,30],[820,28],[1100,38]].map(([x,y],i) => (
+          <circle key={i} cx={x} cy={y} r={i%3===0?0.9:0.55} fill="white" opacity={0.15+((i*7)%5)*0.07}/>
+        ))}
+
+        {/* Topo contours — left cluster */}
+        <g stroke="rgba(255,255,255,0.022)" strokeWidth="0.6" fill="none">
+          <ellipse cx="200" cy="110" rx="160" ry="100"/>
+          <ellipse cx="200" cy="110" rx="118" ry="74"/>
+          <ellipse cx="200" cy="110" rx="78" ry="50"/>
+          <ellipse cx="200" cy="110" rx="44" ry="28"/>
+        </g>
+        {/* Topo contours — right cluster */}
+        <g stroke="rgba(255,255,255,0.018)" strokeWidth="0.6" fill="none">
+          <ellipse cx="1000" cy="100" rx="150" ry="95"/>
+          <ellipse cx="1000" cy="100" rx="108" ry="68"/>
+          <ellipse cx="1000" cy="100" rx="68" ry="42"/>
+        </g>
+
+        {/* Far mountains */}
+        <path d="M0,220 L80,155 L180,175 L280,140 L380,160 L480,125 L580,148 L680,118 L780,140 L880,112 L980,135 L1080,108 L1180,130 L1200,125 L1200,220Z" fill="url(#lgMtn1)" opacity="0.9"/>
+        {/* Mid mountains */}
+        <path d="M0,220 L100,175 L220,190 L340,168 L460,182 L580,162 L700,178 L820,158 L940,172 L1060,155 L1150,168 L1200,162 L1200,220Z" fill="url(#lgMtn2)" opacity="0.95"/>
+
+        {/* Central energy beam (inactive = hidden) */}
+        {!inactive && (
+          <g opacity="0.07" filter="url(#lgBlur)">
+            <line x1="600" y1="220" x2="480" y2="0" stroke="#F59E0B" strokeWidth="60"/>
+            <line x1="600" y1="220" x2="600" y2="0" stroke="#F59E0B" strokeWidth="80"/>
+            <line x1="600" y1="220" x2="720" y2="0" stroke="#F59E0B" strokeWidth="60"/>
+          </g>
+        )}
+
+        {/* Platform glow */}
+        <ellipse cx="600" cy="218" rx={inactive ? 120 : 160} ry="10" fill={inactive ? 'rgba(107,114,128,0.35)' : 'rgba(245,158,11,0.45)'} filter="url(#lgBlur)"/>
+        <ellipse cx="600" cy="218" rx={inactive ? 80 : 110} ry="7" fill="none" stroke={inactive ? 'rgba(107,114,128,0.4)' : '#F59E0B'} strokeWidth="0.6" opacity="0.30"/>
+
+        {/* VS divider swords hint */}
+        {!inactive && (
+          <>
+            <line x1="595" y1="60" x2="595" y2="160" stroke="rgba(245,158,11,0.15)" strokeWidth="0.8"/>
+            <line x1="605" y1="60" x2="605" y2="160" stroke="rgba(245,158,11,0.10)" strokeWidth="0.5"/>
+          </>
+        )}
+
+        {/* Corner decorations */}
+        <circle cx="1160" cy="200" r="70" fill="none" stroke="rgba(255,255,255,0.018)" strokeWidth="0.6"/>
+        <circle cx="1160" cy="200" r="48" fill="none" stroke="rgba(255,255,255,0.014)" strokeWidth="0.5"/>
+        <circle cx="40" cy="210" r="60" fill="none" stroke="rgba(255,255,255,0.015)" strokeWidth="0.5"/>
+      </svg>
+
+      {/* Top accent */}
+      <div className={`absolute top-0 inset-x-0 h-0.5 bg-gradient-to-r ${inactive ? 'from-slate-600/40 via-slate-500/30 to-slate-600/40' : 'from-amber-500/50 via-yellow-400/60 to-amber-500/50'}`}/>
+
+      {/* Content overlay */}
+      <div className="relative px-8 py-7 flex flex-col sm:flex-row sm:items-end gap-4">
+        <div className="flex-1">
+          <p className={`text-[10px] font-black uppercase tracking-[0.30em] mb-2 ${inactive ? 'text-slate-500' : 'text-amber-400/70'}`}>
+            {inactive ? 'Sin Liga Activa' : 'Liga Activa'}
+          </p>
+          <h1 className="text-3xl sm:text-4xl font-black tracking-tighter leading-none text-white/95 mb-1.5">
+            {title}
+          </h1>
+          <p className="text-sm text-white/35 font-medium">{subtitle}</p>
+        </div>
+        <div className="shrink-0">
+          <div className={`flex h-12 w-12 items-center justify-center rounded-2xl border shadow-lg ${inactive ? 'bg-slate-800/60 border-slate-700/40' : 'bg-gradient-to-br from-amber-400/20 to-amber-600/20 border-amber-500/30 shadow-amber-500/15'}`}>
+            <Swords className={`h-5 w-5 ${inactive ? 'text-slate-500' : 'text-amber-400'}`} strokeWidth={2}/>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ─── Page ──────────────────────────────────────────────────────────────────────
 
 export default async function LeaguePage() {
@@ -338,16 +462,8 @@ export default async function LeaguePage() {
 
   if (!league) {
     return (
-      <div className="space-y-4">
-        <div>
-          <div className="flex items-center gap-2.5 mb-1">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted">
-              <Swords className="h-4 w-4 text-muted-foreground" strokeWidth={2} />
-            </div>
-            <h1 className="text-2xl font-black tracking-tight">Liga Activa</h1>
-          </div>
-          <p className="text-sm text-muted-foreground ml-10.5">Clasificación y partidas de la ronda actual</p>
-        </div>
+      <div className="space-y-6 pb-10">
+        <LeagueHero title="Liga Activa" subtitle="No hay ninguna liga en curso ahora mismo" inactive />
         <Card>
           <CardContent className="py-16 text-center space-y-1">
             <p className="text-sm font-semibold text-muted-foreground">Sin liga activa</p>
@@ -400,28 +516,13 @@ export default async function LeaguePage() {
     (m) => m.player_a_id === currentUserId || m.player_b_id === currentUserId
   )
 
+  const leagueSubtitle = `Liga activa · iniciada el ${new Date(league.created_at).toLocaleDateString('es-ES', { month: 'long', day: 'numeric' })}`
+
   return (
     <div className="space-y-6 pb-10">
 
-      {/* ── Header ── */}
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2.5 mb-1">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-amber-400 to-amber-600 shadow-sm shadow-amber-500/25">
-              <Swords className="h-4 w-4 text-white" strokeWidth={2.5} />
-            </div>
-            <h1 className="text-2xl font-black tracking-tight">{league.title}</h1>
-          </div>
-          <p className="text-sm text-muted-foreground ml-10.5">
-            Liga activa · iniciada el{' '}
-            {new Date(league.created_at).toLocaleDateString('es-ES', {
-              month: 'long',
-              day: 'numeric',
-            })}
-          </p>
-        </div>
-        <Trophy className="h-7 w-7 text-amber-400/50 dark:text-amber-500/40 shrink-0 mt-1" />
-      </div>
+      {/* ── Hero banner ── */}
+      <LeagueHero title={league.title} subtitle={leagueSubtitle} />
 
       {/* ── Progress bar ── */}
       <ProgressBar done={resolvedCount} total={totalCount} />

@@ -385,6 +385,117 @@ function LeagueCard({
   )
 }
 
+// ─── History hero banner ───────────────────────────────────────────────────────
+
+function HistoryHero({ subtitle }: { subtitle: string }) {
+  return (
+    <div className="relative rounded-2xl overflow-hidden border border-white/8 shadow-xl">
+      <svg
+        className="absolute inset-0 w-full h-full"
+        viewBox="0 0 1200 200"
+        preserveAspectRatio="xMidYMid slice"
+        aria-hidden
+      >
+        <defs>
+          <linearGradient id="hhBase" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stopColor="#09080D"/>
+            <stop offset="100%" stopColor="#05050A"/>
+          </linearGradient>
+          <radialGradient id="hhGlow" cx="50%" cy="80%" r="60%">
+            <stop offset="0%" stopColor="#8B5CF6" stopOpacity="0.14"/>
+            <stop offset="100%" stopColor="#8B5CF6" stopOpacity="0"/>
+          </radialGradient>
+          <radialGradient id="hhLeft" cx="8%" cy="50%" r="50%">
+            <stop offset="0%" stopColor="#F59E0B" stopOpacity="0.08"/>
+            <stop offset="100%" stopColor="#F59E0B" stopOpacity="0"/>
+          </radialGradient>
+          <radialGradient id="hhRight" cx="92%" cy="50%" r="50%">
+            <stop offset="0%" stopColor="#A78BFA" stopOpacity="0.08"/>
+            <stop offset="100%" stopColor="#A78BFA" stopOpacity="0"/>
+          </radialGradient>
+          <linearGradient id="hhMtn" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#0E0C18"/>
+            <stop offset="100%" stopColor="#07060C"/>
+          </linearGradient>
+          <filter id="hhBlur">
+            <feGaussianBlur stdDeviation="7"/>
+          </filter>
+        </defs>
+
+        <rect width="1200" height="200" fill="url(#hhBase)"/>
+        <rect width="1200" height="200" fill="url(#hhGlow)"/>
+        <rect width="1200" height="200" fill="url(#hhLeft)"/>
+        <rect width="1200" height="200" fill="url(#hhRight)"/>
+
+        {/* Stars — denser, dimmer (archive feel) */}
+        {[[55,10],[120,18],[200,8],[310,14],[430,6],[550,12],[680,9],[800,16],[920,7],[1040,13],[1160,20],[1180,5],[90,30],[380,28],[700,32],[1000,26]].map(([x,y],i) => (
+          <circle key={i} cx={x} cy={y} r={i%4===0?0.85:0.5} fill="white" opacity={0.12+((i*11)%5)*0.05}/>
+        ))}
+
+        {/* Topographic contour layers — layered depth */}
+        <g stroke="rgba(139,92,246,0.028)" strokeWidth="0.7" fill="none">
+          <ellipse cx="180" cy="100" rx="170" ry="108"/>
+          <ellipse cx="180" cy="100" rx="126" ry="80"/>
+          <ellipse cx="180" cy="100" rx="84" ry="52"/>
+          <ellipse cx="180" cy="100" rx="46" ry="29"/>
+        </g>
+        <g stroke="rgba(139,92,246,0.022)" strokeWidth="0.6" fill="none">
+          <ellipse cx="1020" cy="95" rx="155" ry="100"/>
+          <ellipse cx="1020" cy="95" rx="112" ry="72"/>
+          <ellipse cx="1020" cy="95" rx="72" ry="46"/>
+        </g>
+        {/* Centre faint ring — trophy watermark hint */}
+        <g stroke="rgba(245,158,11,0.06)" strokeWidth="0.8" fill="none">
+          <circle cx="600" cy="100" r="68"/>
+          <circle cx="600" cy="100" r="50"/>
+          <circle cx="600" cy="100" r="34"/>
+        </g>
+        {/* Trophy cup simplified outline */}
+        <path d="M588,68 L612,68 L614,82 C622,82 628,88 628,96 C628,104 622,110 614,110 L612,118 L620,122 L580,122 L588,118 L586,110 C578,110 572,104 572,96 C572,88 578,82 586,82 Z"
+          fill="none" stroke="rgba(245,158,11,0.07)" strokeWidth="0.8"/>
+
+        {/* Mountains silhouette */}
+        <path d="M0,200 L70,150 L150,165 L240,138 L360,158 L480,130 L600,148 L720,125 L840,145 L960,122 L1080,142 L1170,130 L1200,135 L1200,200Z" fill="url(#hhMtn)" opacity="0.9"/>
+
+        {/* Soft beam from centre — faded purple */}
+        <g opacity="0.05" filter="url(#hhBlur)">
+          <line x1="600" y1="200" x2="520" y2="0" stroke="#8B5CF6" strokeWidth="80"/>
+          <line x1="600" y1="200" x2="680" y2="0" stroke="#8B5CF6" strokeWidth="60"/>
+        </g>
+
+        {/* Ground platform */}
+        <ellipse cx="600" cy="198" rx="130" ry="8" fill="rgba(139,92,246,0.3)" filter="url(#hhBlur)"/>
+        <ellipse cx="600" cy="198" rx="90" ry="6" fill="none" stroke="rgba(139,92,246,0.35)" strokeWidth="0.6" opacity="0.35"/>
+
+        {/* Corner ring accents */}
+        <circle cx="30" cy="200" r="65" fill="none" stroke="rgba(255,255,255,0.016)" strokeWidth="0.6"/>
+        <circle cx="1170" cy="195" r="75" fill="none" stroke="rgba(255,255,255,0.016)" strokeWidth="0.6"/>
+      </svg>
+
+      {/* Top accent — amber to violet (archive palette) */}
+      <div className="absolute top-0 inset-x-0 h-0.5 bg-gradient-to-r from-amber-500/40 via-violet-400/50 to-amber-500/40"/>
+
+      {/* Content */}
+      <div className="relative px-8 py-7 flex flex-col sm:flex-row sm:items-end gap-4">
+        <div className="flex-1">
+          <p className="text-[10px] font-black uppercase tracking-[0.30em] text-violet-400/60 mb-2">
+            Hall of Champions
+          </p>
+          <h1 className="text-3xl sm:text-4xl font-black tracking-tighter leading-none text-white/95 mb-1.5">
+            Archivo de <span className="bg-gradient-to-r from-amber-400 to-violet-400 bg-clip-text text-transparent">Ligas</span>
+          </h1>
+          <p className="text-sm text-white/35 font-medium">{subtitle}</p>
+        </div>
+        <div className="shrink-0">
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-500/15 to-amber-500/15 border border-violet-500/25 shadow-lg shadow-violet-500/10">
+            <Trophy className="h-5 w-5 text-amber-400" strokeWidth={2}/>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ─── Page ──────────────────────────────────────────────────────────────────────
 
 export default async function HistoryPage() {
@@ -400,16 +511,8 @@ export default async function HistoryPage() {
 
   if (leagues.length === 0) {
     return (
-      <div className="space-y-4">
-        <div>
-          <div className="flex items-center gap-2.5 mb-1">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-amber-400 to-amber-600 shadow-sm shadow-amber-500/25">
-              <Trophy className="h-4 w-4 text-white" strokeWidth={2} />
-            </div>
-            <h1 className="text-2xl font-black tracking-tight">Archivo de Ligas</h1>
-          </div>
-          <p className="text-sm text-muted-foreground ml-10.5">Hall of past seasons</p>
-        </div>
+      <div className="space-y-6 pb-10">
+        <HistoryHero subtitle="Ninguna temporada completada todavía" />
         <Card>
           <CardContent className="py-16 text-center space-y-1">
             <p className="text-sm font-semibold text-muted-foreground">Ninguna temporada completada</p>
@@ -458,24 +561,13 @@ export default async function HistoryPage() {
     }
   })
 
+  const historySubtitle = `${leagues.length} temporada${leagues.length !== 1 ? 's' : ''} completada${leagues.length !== 1 ? 's' : ''} · registro permanente`
+
   return (
     <div className="space-y-10 pb-10">
 
-      {/* ── Header ── */}
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2.5 mb-1">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-amber-400 to-amber-600 shadow-sm shadow-amber-500/25">
-              <Trophy className="h-4 w-4 text-white" strokeWidth={2} />
-            </div>
-            <h1 className="text-2xl font-black tracking-tight">Archivo de Ligas</h1>
-          </div>
-          <p className="text-sm text-muted-foreground ml-10.5">
-            {leagues.length} temporada{leagues.length !== 1 ? 's' : ''} completada{leagues.length !== 1 ? 's' : ''}
-            {' · '}hall of champions
-          </p>
-        </div>
-      </div>
+      {/* ── Hero ── */}
+      <HistoryHero subtitle={historySubtitle} />
 
       {/* ── Hall of Champions strip ── */}
       {leagueData.length > 1 && (
