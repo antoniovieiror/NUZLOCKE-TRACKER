@@ -265,6 +265,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ id: st
         {/* Team + Box + Save sync */}
         <div className="space-y-4">
           <PokemonSection
+            key={profile.save_synced_at ?? 'never'}
             profileId={profile.id}
             initialTeam={profile.team}
             initialBox={profile.box}

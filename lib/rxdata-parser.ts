@@ -281,9 +281,9 @@ export function parseRxdata(buffer: ArrayBuffer): ParsedSaveData {
     const nameRaw = entry.ivars['@name']
     if (typeof speciesRaw !== 'number' || speciesRaw <= 0) continue
 
-    // Some games prepend a gender byte ('>','<') — strip it
+    // Some games prepend a gender byte ('>','<') — strip it, then uppercase for consistency
     const rawNick = typeof nameRaw === 'string' ? nameRaw : ''
-    const nickname = rawNick.replace(/^[><]/, '')
+    const nickname = rawNick.replace(/^[><]/, '').toUpperCase()
 
     party.push({ speciesId: String(speciesRaw), nickname })
   }
