@@ -14,7 +14,7 @@ import {
 } from '@/components/ui/table'
 import { Separator } from '@/components/ui/separator'
 
-// ─── Types ─────────────────────────────────────────────────────────────────────
+// ─── Types ────────────────────────────────────────────────────────────────────
 
 type PlayerRow = {
   id: string
@@ -28,7 +28,7 @@ type PlayerRow = {
   matchesPlayed: number
 }
 
-// ─── Helpers ───────────────────────────────────────────────────────────────────
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function computeStandings(
   matches: Match[],
@@ -110,8 +110,8 @@ function streakLabel(streak: number) {
       className={cn(
         'text-[10px] font-black px-1 py-0.5 rounded tracking-wide',
         isWin
-          ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300'
-          : 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300'
+          ? 'bg-green-900/40 text-green-300'
+          : 'bg-red-900/40 text-red-300'
       )}
     >
       {isWin ? `W${count}` : `L${count}`}
@@ -119,7 +119,7 @@ function streakLabel(streak: number) {
   )
 }
 
-// ─── Rank indicator (no emojis) ────────────────────────────────────────────────
+// ─── Rank indicator ───────────────────────────────────────────────────────────
 
 function StandingsRank({ rank }: { rank: number }) {
   if (rank === 1)
@@ -130,13 +130,13 @@ function StandingsRank({ rank }: { rank: number }) {
     )
   if (rank === 2)
     return (
-      <span className="inline-flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-black bg-gradient-to-br from-slate-300 to-slate-400 text-slate-800 dark:from-slate-500 dark:to-slate-600 dark:text-slate-100">
+      <span className="inline-flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-black bg-gradient-to-br from-slate-400 to-slate-500 text-slate-100">
         2
       </span>
     )
   if (rank === 3)
     return (
-      <span className="inline-flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-black bg-gradient-to-br from-orange-300 to-amber-400 text-orange-950 dark:from-orange-600 dark:to-amber-700 dark:text-orange-100">
+      <span className="inline-flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-black bg-gradient-to-br from-orange-600 to-amber-700 text-orange-100">
         3
       </span>
     )
@@ -147,15 +147,15 @@ function StandingsRank({ rank }: { rank: number }) {
   )
 }
 
-// ─── Status badge ──────────────────────────────────────────────────────────────
+// ─── Status badge ─────────────────────────────────────────────────────────────
 
 function StatusBadge({ status }: { status: Match['status'] }) {
   const cfg = {
-    pending:        { label: 'Pendiente', icon: Clock,         cls: 'text-amber-700 bg-amber-50 border-amber-200/80 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-800/60' },
-    validated:      { label: 'Validado',  icon: CheckCircle2,  cls: 'text-green-700 bg-green-50 border-green-200/80 dark:bg-green-950/30 dark:text-green-400 dark:border-green-800/60' },
-    disputed:       { label: 'Disputado', icon: AlertCircle,   cls: 'text-red-700 bg-red-50 border-red-200/80 dark:bg-red-950/30 dark:text-red-400 dark:border-red-800/60' },
+    pending:        { label: 'Pendiente', icon: Clock,         cls: 'bg-amber-950/40 text-amber-400 border-amber-800/60' },
+    validated:      { label: 'Validado',  icon: CheckCircle2,  cls: 'bg-green-950/40 text-green-400 border-green-800/60' },
+    disputed:       { label: 'Disputado', icon: AlertCircle,   cls: 'bg-red-950/40 text-red-400 border-red-800/60' },
     voided:         { label: 'Anulado',   icon: Ban,           cls: 'text-muted-foreground bg-muted/60 border-border/60' },
-    admin_resolved: { label: 'Resuelto',  icon: Shield,        cls: 'text-blue-700 bg-blue-50 border-blue-200/80 dark:bg-blue-950/30 dark:text-blue-400 dark:border-blue-800/60' },
+    admin_resolved: { label: 'Resuelto',  icon: Shield,        cls: 'bg-primary/10 text-primary border-primary/30' },
   } as const
 
   const { label, icon: Icon, cls } = cfg[status]
@@ -167,24 +167,21 @@ function StatusBadge({ status }: { status: Match['status'] }) {
   )
 }
 
-// ─── Vote dots ─────────────────────────────────────────────────────────────────
+// ─── Vote dots ────────────────────────────────────────────────────────────────
 
 function VoteDots({ voteA, voteB }: { voteA: Match['vote_a']; voteB: Match['vote_b'] }) {
   return (
-    <span className="flex gap-0.5" title={`${voteA ? 'A voted' : 'A pending'} / ${voteB ? 'B voted' : 'B pending'}`}>
-      <span className={cn('w-1.5 h-1.5 rounded-full', voteA ? 'bg-foreground' : 'bg-muted-foreground/25')} />
-      <span className={cn('w-1.5 h-1.5 rounded-full', voteB ? 'bg-foreground' : 'bg-muted-foreground/25')} />
+    <span className="flex gap-0.5">
+      <span className={cn('w-1.5 h-1.5 rounded-full', voteA ? 'bg-primary' : 'bg-muted-foreground/25')} />
+      <span className={cn('w-1.5 h-1.5 rounded-full', voteB ? 'bg-primary' : 'bg-muted-foreground/25')} />
     </span>
   )
 }
 
-// ─── Match card ────────────────────────────────────────────────────────────────
+// ─── Match card ───────────────────────────────────────────────────────────────
 
 function MatchCard({
-  match,
-  playerA,
-  playerB,
-  currentUserId,
+  match, playerA, playerB, currentUserId,
 }: {
   match: Match
   playerA: Pick<Profile, 'id' | 'username' | 'avatar_url'>
@@ -195,12 +192,6 @@ function MatchCard({
     currentUserId === match.player_a_id || currentUserId === match.player_b_id
   const isResolved =
     match.status === 'validated' || match.status === 'admin_resolved'
-  const winnerName =
-    match.winner_id === playerA.id
-      ? playerA.username
-      : match.winner_id === playerB.id
-      ? playerB.username
-      : null
 
   return (
     <Link
@@ -208,15 +199,14 @@ function MatchCard({
       className={cn(
         'block rounded-xl border p-3 transition-all duration-200 hover:shadow-md hover:-translate-y-px',
         isParticipant && match.status === 'pending'
-          ? 'border-amber-300/60 bg-amber-50/40 dark:border-amber-700/40 dark:bg-amber-950/20 shadow-sm'
+          ? 'border-primary/40 bg-primary/5 shadow-sm'
           : match.status === 'disputed'
-          ? 'border-red-300/60 bg-red-50/25 dark:border-red-800/40 dark:bg-red-950/12'
+          ? 'border-red-800/40 bg-red-950/10'
           : 'bg-card/80 border-border/50 hover:border-border'
       )}
     >
       {/* Players row */}
       <div className="flex items-center gap-2">
-        {/* Player A */}
         <div className="flex items-center gap-1.5 flex-1 min-w-0">
           <Avatar className="h-6 w-6 shrink-0 ring-1 ring-border/40">
             <AvatarImage src={playerA.avatar_url ?? undefined} />
@@ -228,7 +218,7 @@ function MatchCard({
             className={cn(
               'text-sm font-semibold truncate',
               match.winner_id === playerA.id
-                ? 'text-green-600 dark:text-green-400'
+                ? 'text-green-400'
                 : isResolved && match.winner_id !== null
                 ? 'text-muted-foreground/60 line-through decoration-1'
                 : ''
@@ -238,7 +228,6 @@ function MatchCard({
           </span>
         </div>
 
-        {/* VS / result */}
         <div className="flex flex-col items-center shrink-0 w-14">
           <span className="text-[9px] font-black text-muted-foreground/60 tracking-[0.2em]">
             {isResolved ? 'FIN' : 'VS'}
@@ -248,13 +237,12 @@ function MatchCard({
           )}
         </div>
 
-        {/* Player B */}
         <div className="flex items-center gap-1.5 flex-1 min-w-0 justify-end">
           <span
             className={cn(
               'text-sm font-semibold truncate text-right',
               match.winner_id === playerB.id
-                ? 'text-green-600 dark:text-green-400'
+                ? 'text-green-400'
                 : isResolved && match.winner_id !== null
                 ? 'text-muted-foreground/60 line-through decoration-1'
                 : ''
@@ -271,11 +259,10 @@ function MatchCard({
         </div>
       </div>
 
-      {/* Footer row */}
       <div className="flex items-center justify-between mt-2">
         <StatusBadge status={match.status} />
         {isParticipant && match.status === 'pending' && (
-          <span className="text-[10px] text-amber-600 dark:text-amber-400 font-bold tracking-wide">
+          <span className="text-[10px] text-primary font-black tracking-wide">
             TU TURNO
           </span>
         )}
@@ -284,7 +271,7 @@ function MatchCard({
   )
 }
 
-// ─── Progress bar ──────────────────────────────────────────────────────────────
+// ─── Progress bar ─────────────────────────────────────────────────────────────
 
 function ProgressBar({ done, total }: { done: number; total: number }) {
   const pct = total === 0 ? 0 : Math.round((done / total) * 100)
@@ -300,7 +287,7 @@ function ProgressBar({ done, total }: { done: number; total: number }) {
           <span>{done} / {total} partidas resueltas</span>
           <span className={cn(
             'font-black tabular-nums text-sm',
-            isComplete ? 'text-green-600 dark:text-green-400' : 'text-foreground'
+            isComplete ? 'text-green-400' : 'text-primary'
           )}>
             {pct}%
           </span>
@@ -312,7 +299,7 @@ function ProgressBar({ done, total }: { done: number; total: number }) {
             'h-full rounded-full transition-all duration-700 ease-out',
             isComplete
               ? 'bg-gradient-to-r from-green-400 to-emerald-500'
-              : 'bg-gradient-to-r from-amber-400 to-amber-500'
+              : 'bg-gradient-to-r from-primary to-cyan-400'
           )}
           style={{ width: `${pct}%` }}
         />
@@ -321,7 +308,7 @@ function ProgressBar({ done, total }: { done: number; total: number }) {
   )
 }
 
-// ─── League hero banner ────────────────────────────────────────────────────────
+// ─── League hero banner ───────────────────────────────────────────────────────
 
 function LeagueHero({ title, subtitle, inactive }: { title: string; subtitle: string; inactive?: boolean }) {
   return (
@@ -334,35 +321,31 @@ function LeagueHero({ title, subtitle, inactive }: { title: string; subtitle: st
       >
         <defs>
           <linearGradient id="lgBase" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0%" stopColor="#080B18"/>
+            <stop offset="0%" stopColor="#07090f"/>
             <stop offset="100%" stopColor="#040610"/>
           </linearGradient>
           <radialGradient id="lgLeft" cx="10%" cy="50%" r="55%">
-            <stop offset="0%" stopColor={inactive ? '#6B7280' : '#F59E0B'} stopOpacity="0.12"/>
-            <stop offset="100%" stopColor="#F59E0B" stopOpacity="0"/>
+            <stop offset="0%" stopColor={inactive ? '#6B7280' : '#00c8e8'} stopOpacity="0.12"/>
+            <stop offset="100%" stopColor="#00c8e8" stopOpacity="0"/>
           </radialGradient>
           <radialGradient id="lgRight" cx="90%" cy="50%" r="55%">
-            <stop offset="0%" stopColor={inactive ? '#6B7280' : '#F59E0B'} stopOpacity="0.10"/>
-            <stop offset="100%" stopColor="#F59E0B" stopOpacity="0"/>
+            <stop offset="0%" stopColor={inactive ? '#6B7280' : '#00c8e8'} stopOpacity="0.08"/>
+            <stop offset="100%" stopColor="#00c8e8" stopOpacity="0"/>
           </radialGradient>
           <radialGradient id="lgCenter" cx="50%" cy="100%" r="50%">
-            <stop offset="0%" stopColor={inactive ? '#4B5563' : '#F59E0B'} stopOpacity="0.22"/>
-            <stop offset="100%" stopColor="#F59E0B" stopOpacity="0"/>
+            <stop offset="0%" stopColor={inactive ? '#4B5563' : '#00c8e8'} stopOpacity="0.20"/>
+            <stop offset="100%" stopColor="#00c8e8" stopOpacity="0"/>
           </radialGradient>
           <linearGradient id="lgMtn1" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#0D1226"/>
-            <stop offset="100%" stopColor="#080B18"/>
+            <stop offset="0%" stopColor="#0c1030"/>
+            <stop offset="100%" stopColor="#07090f"/>
           </linearGradient>
           <linearGradient id="lgMtn2" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#0A0E1E"/>
-            <stop offset="100%" stopColor="#05070E"/>
+            <stop offset="0%" stopColor="#090c1e"/>
+            <stop offset="100%" stopColor="#040508"/>
           </linearGradient>
-          <filter id="lgBlur">
-            <feGaussianBlur stdDeviation="8"/>
-          </filter>
-          <filter id="lgBlurSm">
-            <feGaussianBlur stdDeviation="3"/>
-          </filter>
+          <filter id="lgBlur"><feGaussianBlur stdDeviation="8"/></filter>
+          <filter id="lgBlurSm"><feGaussianBlur stdDeviation="3"/></filter>
         </defs>
 
         <rect width="1200" height="220" fill="url(#lgBase)"/>
@@ -370,74 +353,63 @@ function LeagueHero({ title, subtitle, inactive }: { title: string; subtitle: st
         <rect width="1200" height="220" fill="url(#lgRight)"/>
         <rect width="1200" height="220" fill="url(#lgCenter)"/>
 
-        {/* Stars */}
         {[[60,18],[130,12],[250,22],[400,10],[580,16],[750,8],[900,20],[1050,14],[1140,25],[180,35],[520,30],[820,28],[1100,38]].map(([x,y],i) => (
           <circle key={i} cx={x} cy={y} r={i%3===0?0.9:0.55} fill="white" opacity={0.15+((i*7)%5)*0.07}/>
         ))}
 
-        {/* Topo contours — left cluster */}
-        <g stroke="rgba(255,255,255,0.022)" strokeWidth="0.6" fill="none">
+        <g stroke="rgba(0,200,232,0.025)" strokeWidth="0.6" fill="none">
           <ellipse cx="200" cy="110" rx="160" ry="100"/>
           <ellipse cx="200" cy="110" rx="118" ry="74"/>
           <ellipse cx="200" cy="110" rx="78" ry="50"/>
           <ellipse cx="200" cy="110" rx="44" ry="28"/>
         </g>
-        {/* Topo contours — right cluster */}
-        <g stroke="rgba(255,255,255,0.018)" strokeWidth="0.6" fill="none">
+        <g stroke="rgba(0,180,220,0.018)" strokeWidth="0.6" fill="none">
           <ellipse cx="1000" cy="100" rx="150" ry="95"/>
           <ellipse cx="1000" cy="100" rx="108" ry="68"/>
           <ellipse cx="1000" cy="100" rx="68" ry="42"/>
         </g>
 
-        {/* Far mountains */}
         <path d="M0,220 L80,155 L180,175 L280,140 L380,160 L480,125 L580,148 L680,118 L780,140 L880,112 L980,135 L1080,108 L1180,130 L1200,125 L1200,220Z" fill="url(#lgMtn1)" opacity="0.9"/>
-        {/* Mid mountains */}
         <path d="M0,220 L100,175 L220,190 L340,168 L460,182 L580,162 L700,178 L820,158 L940,172 L1060,155 L1150,168 L1200,162 L1200,220Z" fill="url(#lgMtn2)" opacity="0.95"/>
 
-        {/* Central energy beam (inactive = hidden) */}
         {!inactive && (
-          <g opacity="0.07" filter="url(#lgBlur)">
-            <line x1="600" y1="220" x2="480" y2="0" stroke="#F59E0B" strokeWidth="60"/>
-            <line x1="600" y1="220" x2="600" y2="0" stroke="#F59E0B" strokeWidth="80"/>
-            <line x1="600" y1="220" x2="720" y2="0" stroke="#F59E0B" strokeWidth="60"/>
+          <g opacity="0.06" filter="url(#lgBlur)">
+            <line x1="600" y1="220" x2="480" y2="0" stroke="#00c8e8" strokeWidth="60"/>
+            <line x1="600" y1="220" x2="600" y2="0" stroke="#00c8e8" strokeWidth="80"/>
+            <line x1="600" y1="220" x2="720" y2="0" stroke="#00c8e8" strokeWidth="60"/>
           </g>
         )}
 
-        {/* Platform glow */}
-        <ellipse cx="600" cy="218" rx={inactive ? 120 : 160} ry="10" fill={inactive ? 'rgba(107,114,128,0.35)' : 'rgba(245,158,11,0.45)'} filter="url(#lgBlur)"/>
-        <ellipse cx="600" cy="218" rx={inactive ? 80 : 110} ry="7" fill="none" stroke={inactive ? 'rgba(107,114,128,0.4)' : '#F59E0B'} strokeWidth="0.6" opacity="0.30"/>
+        <ellipse cx="600" cy="218" rx={inactive ? 120 : 160} ry="10" fill={inactive ? 'rgba(107,114,128,0.35)' : 'rgba(0,200,232,0.40)'} filter="url(#lgBlur)"/>
+        <ellipse cx="600" cy="218" rx={inactive ? 80 : 110} ry="7" fill="none" stroke={inactive ? 'rgba(107,114,128,0.4)' : '#00c8e8'} strokeWidth="0.6" opacity="0.35"/>
 
-        {/* VS divider swords hint */}
         {!inactive && (
           <>
-            <line x1="595" y1="60" x2="595" y2="160" stroke="rgba(245,158,11,0.15)" strokeWidth="0.8"/>
-            <line x1="605" y1="60" x2="605" y2="160" stroke="rgba(245,158,11,0.10)" strokeWidth="0.5"/>
+            <line x1="595" y1="60" x2="595" y2="160" stroke="rgba(0,200,232,0.15)" strokeWidth="0.8"/>
+            <line x1="605" y1="60" x2="605" y2="160" stroke="rgba(0,200,232,0.10)" strokeWidth="0.5"/>
           </>
         )}
 
-        {/* Corner decorations */}
         <circle cx="1160" cy="200" r="70" fill="none" stroke="rgba(255,255,255,0.018)" strokeWidth="0.6"/>
         <circle cx="1160" cy="200" r="48" fill="none" stroke="rgba(255,255,255,0.014)" strokeWidth="0.5"/>
         <circle cx="40" cy="210" r="60" fill="none" stroke="rgba(255,255,255,0.015)" strokeWidth="0.5"/>
       </svg>
 
-      {/* Top accent */}
-      <div className={`absolute top-0 inset-x-0 h-0.5 bg-gradient-to-r ${inactive ? 'from-slate-600/40 via-slate-500/30 to-slate-600/40' : 'from-amber-500/50 via-yellow-400/60 to-amber-500/50'}`}/>
+      <div className={`absolute top-0 inset-x-0 h-0.5 bg-gradient-to-r ${inactive ? 'from-slate-600/40 via-slate-500/30 to-slate-600/40' : 'from-primary/50 via-cyan-300/60 to-primary/50'}`}/>
 
-      {/* Content overlay */}
       <div className="relative px-8 py-7 flex flex-col sm:flex-row sm:items-end gap-4">
         <div className="flex-1">
-          <p className={`text-[10px] font-black uppercase tracking-[0.30em] mb-2 ${inactive ? 'text-slate-500' : 'text-amber-400/70'}`}>
+          <p className={`text-[10px] font-black uppercase tracking-[0.30em] mb-2 ${inactive ? 'text-slate-500' : 'text-primary/70'}`}>
             {inactive ? 'Sin Liga Activa' : 'Liga Activa'}
           </p>
-          <h1 className="text-3xl sm:text-4xl font-black tracking-tighter leading-none text-white/95 mb-1.5">
+          <h1 className="font-heading text-4xl sm:text-5xl font-700 tracking-widest leading-none text-white/95 mb-1.5 uppercase">
             {title}
           </h1>
           <p className="text-sm text-white/35 font-medium">{subtitle}</p>
         </div>
         <div className="shrink-0">
-          <div className={`flex h-12 w-12 items-center justify-center rounded-2xl border shadow-lg ${inactive ? 'bg-slate-800/60 border-slate-700/40' : 'bg-gradient-to-br from-amber-400/20 to-amber-600/20 border-amber-500/30 shadow-amber-500/15'}`}>
-            <Swords className={`h-5 w-5 ${inactive ? 'text-slate-500' : 'text-amber-400'}`} strokeWidth={2}/>
+          <div className={`flex h-12 w-12 items-center justify-center rounded-2xl border shadow-lg ${inactive ? 'bg-slate-800/60 border-slate-700/40' : 'bg-primary/10 border-primary/30 shadow-primary/15'}`}>
+            <Swords className={`h-5 w-5 ${inactive ? 'text-slate-500' : 'text-primary'}`} strokeWidth={2}/>
           </div>
         </div>
       </div>
@@ -445,7 +417,7 @@ function LeagueHero({ title, subtitle, inactive }: { title: string; subtitle: st
   )
 }
 
-// ─── Page ──────────────────────────────────────────────────────────────────────
+// ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default async function LeaguePage() {
   const supabase = await createClient()
@@ -464,7 +436,7 @@ export default async function LeaguePage() {
     return (
       <div className="space-y-6 pb-10">
         <LeagueHero title="Liga Activa" subtitle="No hay ninguna liga en curso ahora mismo" inactive />
-        <Card>
+        <Card className="border-border/50">
           <CardContent className="py-16 text-center space-y-1">
             <p className="text-sm font-semibold text-muted-foreground">Sin liga activa</p>
             <p className="text-xs text-muted-foreground">
@@ -521,17 +493,13 @@ export default async function LeaguePage() {
   return (
     <div className="space-y-6 pb-10">
 
-      {/* ── Hero banner ── */}
       <LeagueHero title={league.title} subtitle={leagueSubtitle} />
-
-      {/* ── Progress bar ── */}
       <ProgressBar done={resolvedCount} total={totalCount} />
 
-      {/* ── Main grid: standings + matches ── */}
       <div className="grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-4 items-start">
 
-        {/* Left: Standings */}
-        <Card className="self-start overflow-hidden">
+        {/* Standings */}
+        <Card className="self-start overflow-hidden border-border/50">
           <CardHeader className="pb-3 border-b border-border/40">
             <CardTitle className="text-sm font-bold">Clasificación</CardTitle>
             <CardDescription className="text-xs">Solo esta liga</CardDescription>
@@ -554,19 +522,16 @@ export default async function LeaguePage() {
                     <TableRow
                       key={row.id}
                       className={cn(
-                        'transition-colors border-border/30',
-                        isMe && 'bg-blue-50/40 dark:bg-blue-950/15',
-                        rank === 1 && 'bg-amber-50/50 dark:bg-amber-950/15',
+                        'transition-colors border-border/20',
+                        isMe && 'bg-primary/5',
+                        rank === 1 && 'bg-amber-950/15',
                       )}
                     >
                       <TableCell className="text-center pl-3">
                         <StandingsRank rank={rank} />
                       </TableCell>
                       <TableCell>
-                        <Link
-                          href={`/profile/${row.id}`}
-                          className="flex items-center gap-1.5 group w-fit"
-                        >
+                        <Link href={`/profile/${row.id}`} className="flex items-center gap-1.5 group w-fit">
                           <Avatar className="h-5 w-5 shrink-0">
                             <AvatarImage src={row.avatar_url ?? undefined} />
                             <AvatarFallback className="text-[8px] font-bold">
@@ -584,13 +549,13 @@ export default async function LeaguePage() {
                           </div>
                         </Link>
                       </TableCell>
-                      <TableCell className="text-right font-black tabular-nums text-sm">
+                      <TableCell className="text-right font-black tabular-nums text-sm text-primary">
                         {row.points}
                       </TableCell>
                       <TableCell className="text-right pr-3 tabular-nums text-xs">
-                        <span className="text-green-600 dark:text-green-400 font-semibold">{row.wins}</span>
+                        <span className="text-green-400 font-semibold">{row.wins}</span>
                         <span className="text-muted-foreground/40 mx-0.5">-</span>
-                        <span className="text-red-500 dark:text-red-400 font-semibold">{row.losses}</span>
+                        <span className="text-red-400 font-semibold">{row.losses}</span>
                       </TableCell>
                     </TableRow>
                   )
@@ -600,47 +565,40 @@ export default async function LeaguePage() {
           </CardContent>
         </Card>
 
-        {/* Right: Match groups */}
+        {/* Match groups */}
         <div className="space-y-5">
 
-          {/* Your pending matches */}
           {myPendingMatches.length > 0 && (
             <div className="space-y-2">
-              <p className="text-[10px] font-black text-amber-600 dark:text-amber-400 uppercase tracking-[0.18em] flex items-center gap-1.5">
-                <span className="inline-block w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+              <p className="text-[10px] font-black text-primary uppercase tracking-[0.18em] flex items-center gap-1.5">
+                <span className="inline-block w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
                 Esperando tu voto
               </p>
               {myPendingMatches.map((m) => {
                 const pA = profileMap.get(m.player_a_id)
                 const pB = profileMap.get(m.player_b_id)
                 if (!pA || !pB) return null
-                return (
-                  <MatchCard key={m.id} match={m} playerA={pA} playerB={pB} currentUserId={currentUserId} />
-                )
+                return <MatchCard key={m.id} match={m} playerA={pA} playerB={pB} currentUserId={currentUserId} />
               })}
-              <Separator className="mt-1 opacity-50" />
+              <Separator className="mt-1 opacity-30" />
             </div>
           )}
 
-          {/* Disputed */}
           {disputed.length > 0 && (
             <div className="space-y-2">
-              <p className="text-[10px] font-black text-red-500 uppercase tracking-[0.18em]">
+              <p className="text-[10px] font-black text-red-400 uppercase tracking-[0.18em]">
                 Disputados — Revisión admin
               </p>
               {disputed.map((m) => {
                 const pA = profileMap.get(m.player_a_id)
                 const pB = profileMap.get(m.player_b_id)
                 if (!pA || !pB) return null
-                return (
-                  <MatchCard key={m.id} match={m} playerA={pA} playerB={pB} currentUserId={currentUserId} />
-                )
+                return <MatchCard key={m.id} match={m} playerA={pA} playerB={pB} currentUserId={currentUserId} />
               })}
-              <Separator className="mt-1 opacity-50" />
+              <Separator className="mt-1 opacity-30" />
             </div>
           )}
 
-          {/* All pending (not mine) */}
           {pending.filter((m) => !myPendingMatches.includes(m)).length > 0 && (
             <div className="space-y-2">
               <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.18em]">
@@ -652,14 +610,11 @@ export default async function LeaguePage() {
                   const pA = profileMap.get(m.player_a_id)
                   const pB = profileMap.get(m.player_b_id)
                   if (!pA || !pB) return null
-                  return (
-                    <MatchCard key={m.id} match={m} playerA={pA} playerB={pB} currentUserId={currentUserId} />
-                  )
+                  return <MatchCard key={m.id} match={m} playerA={pA} playerB={pB} currentUserId={currentUserId} />
                 })}
             </div>
           )}
 
-          {/* Resolved */}
           {done.length > 0 && (
             <div className="space-y-2">
               <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.18em]">
@@ -669,14 +624,11 @@ export default async function LeaguePage() {
                 const pA = profileMap.get(m.player_a_id)
                 const pB = profileMap.get(m.player_b_id)
                 if (!pA || !pB) return null
-                return (
-                  <MatchCard key={m.id} match={m} playerA={pA} playerB={pB} currentUserId={currentUserId} />
-                )
+                return <MatchCard key={m.id} match={m} playerA={pA} playerB={pB} currentUserId={currentUserId} />
               })}
             </div>
           )}
 
-          {/* Voided */}
           {voided.length > 0 && (
             <div className="space-y-2">
               <p className="text-[10px] font-black text-muted-foreground/60 uppercase tracking-[0.18em]">
@@ -686,15 +638,13 @@ export default async function LeaguePage() {
                 const pA = profileMap.get(m.player_a_id)
                 const pB = profileMap.get(m.player_b_id)
                 if (!pA || !pB) return null
-                return (
-                  <MatchCard key={m.id} match={m} playerA={pA} playerB={pB} currentUserId={currentUserId} />
-                )
+                return <MatchCard key={m.id} match={m} playerA={pA} playerB={pB} currentUserId={currentUserId} />
               })}
             </div>
           )}
 
           {matches.length === 0 && (
-            <Card>
+            <Card className="border-border/50">
               <CardContent className="py-12 text-center">
                 <p className="text-sm text-muted-foreground">Sin partidas generadas aún.</p>
               </CardContent>

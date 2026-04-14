@@ -19,7 +19,6 @@ export default async function AdminPage() {
   } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  // Gate: admin only
   const { data: myProfile } = await supabase
     .from('profiles')
     .select('role')
@@ -28,7 +27,6 @@ export default async function AdminPage() {
 
   if (myProfile?.role !== 'admin') redirect('/')
 
-  // Parallel fetches
   const [{ data: usersRaw }, { data: leaguesRaw }, { data: matchStatsRaw }, notifications] =
     await Promise.all([
       supabase
@@ -55,26 +53,54 @@ export default async function AdminPage() {
   return (
     <div className="space-y-6 pb-10">
 
-      {/* ── Header ── */}
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
-          <Shield className="h-6 w-6 text-blue-500 shrink-0" />
-          Admin Panel
-        </h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Manage players, leagues, and match outcomes
-        </p>
+      {/* Header */}
+      <div className="relative rounded-2xl overflow-hidden border border-white/8 shadow-lg p-6">
+        {/* Subtle background */}
+        <div
+          className="absolute inset-0 -z-10"
+          style={{
+            background: 'linear-gradient(135deg, oklch(0.108 0.022 262) 0%, oklch(0.090 0.020 262) 100%)',
+          }}
+        />
+        <div className="absolute top-0 inset-x-0 h-0.5 bg-gradient-to-r from-primary/50 via-cyan-300/60 to-primary/50"/>
+
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 border border-primary/25 shrink-0">
+            <Shield className="h-5 w-5 text-primary" strokeWidth={2}/>
+          </div>
+          <div>
+            <h1 className="font-heading text-2xl font-700 tracking-widest uppercase text-foreground">
+              Admin Panel
+            </h1>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Gestiona jugadores, ligas y resultados de partidas
+            </p>
+          </div>
+        </div>
       </div>
 
-      {/* ── Tabs ── */}
+      {/* Tabs */}
       <Tabs defaultValue="users">
-        <TabsList>
-          <TabsTrigger value="users">Players ({users.length})</TabsTrigger>
-          <TabsTrigger value="leagues">Leagues ({leagues.length})</TabsTrigger>
-          <TabsTrigger value="notifications">
-            Notifications
+        <TabsList className="bg-muted/30 border border-border/40">
+          <TabsTrigger
+            value="users"
+            className="data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:shadow-none"
+          >
+            Jugadores ({users.length})
+          </TabsTrigger>
+          <TabsTrigger
+            value="leagues"
+            className="data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:shadow-none"
+          >
+            Ligas ({leagues.length})
+          </TabsTrigger>
+          <TabsTrigger
+            value="notifications"
+            className="data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:shadow-none"
+          >
+            Notificaciones
             {notifications.length > 0 && (
-              <span className="ml-1.5 inline-flex items-center justify-center w-4 h-4 rounded-full bg-amber-400/20 text-amber-400 text-[10px] font-bold">
+              <span className="ml-1.5 inline-flex items-center justify-center w-4 h-4 rounded-full bg-primary/20 text-primary text-[10px] font-bold">
                 {notifications.length}
               </span>
             )}

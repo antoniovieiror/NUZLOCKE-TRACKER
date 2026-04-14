@@ -348,8 +348,8 @@ function PokemonGrid({
       ) : (
         <div className={cn(
           'grid',
-          compact ? 'gap-2 grid-cols-5 sm:grid-cols-8 md:grid-cols-10 lg:grid-cols-12' :
-          slots === 6 ? 'gap-3 grid-cols-3 sm:grid-cols-6' : 'gap-3 grid-cols-4 sm:grid-cols-6 md:grid-cols-8'
+          compact ? 'gap-4 grid-cols-5 sm:grid-cols-6 md:grid-cols-8' :
+          slots === 6 ? 'gap-3 grid-cols-3 sm:grid-cols-6' : 'gap-4 grid-cols-4 sm:grid-cols-6 md:grid-cols-8'
         )}>
           {cells.map((entry, i) =>
             entry ? (

@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
-import { Navbar } from '@/components/layout/navbar'
+import { Sidebar } from '@/components/layout/sidebar'
 import { NotificationEnvelope } from '@/components/notification-envelope'
 import { getUnreadNotifications } from '@/lib/actions/notifications'
 import type { Profile } from '@/lib/types'
@@ -23,34 +23,34 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   }
 
   return (
-    <div className="relative min-h-screen bg-background">
+    <div className="dark relative min-h-screen bg-background">
 
-      {/* ── Topographic SVG background (dark mode) ── */}
+      {/* ── Geometric grid (Unova urban) ── */}
       <div
-        className="pointer-events-none fixed inset-0 -z-20 hidden dark:block"
+        className="pointer-events-none fixed inset-0 -z-20"
         aria-hidden
         style={{
-          backgroundImage: 'url(/topo-pattern.svg)',
-          backgroundSize: '600px 600px',
-          backgroundRepeat: 'repeat',
+          backgroundImage:
+            'linear-gradient(oklch(0.762 0.148 200 / 0.03) 1px, transparent 1px), linear-gradient(90deg, oklch(0.762 0.148 200 / 0.03) 1px, transparent 1px)',
+          backgroundSize: '48px 48px',
         }}
       />
 
-      {/* ── Atmospheric depth ── */}
+      {/* ── Atmospheric depth glows ── */}
       <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden" aria-hidden>
-        {/* Light mode subtle gradient */}
-        <div className="absolute inset-x-0 top-0 h-[400px] bg-gradient-to-b from-blue-50/50 via-indigo-50/20 to-transparent dark:from-transparent" />
-        {/* Dark mode multi-layer glow */}
-        <div className="absolute inset-x-0 top-0 h-[500px] opacity-0 dark:opacity-100 bg-gradient-to-b from-indigo-950/50 via-blue-950/20 to-transparent" />
-        <div className="absolute -top-10 left-1/2 -translate-x-1/2 h-[300px] w-[1000px] rounded-full bg-blue-600/0 dark:bg-blue-600/4 blur-3xl" />
-        <div className="absolute top-1/4 -right-32 h-[600px] w-[400px] rounded-full bg-violet-500/0 dark:bg-violet-500/3 blur-3xl" />
-        <div className="absolute bottom-0 -left-20 h-[400px] w-[500px] rounded-full bg-indigo-600/0 dark:bg-indigo-600/3 blur-3xl" />
+        <div className="absolute -top-32 left-1/4 h-[500px] w-[700px] rounded-full bg-cyan-600/5 blur-3xl" />
+        <div className="absolute top-1/3 -right-24 h-[400px] w-[400px] rounded-full bg-cyan-500/4 blur-3xl" />
+        <div className="absolute bottom-0 -left-24 h-[300px] w-[500px] rounded-full bg-blue-700/4 blur-3xl" />
       </div>
 
-      <Navbar user={profile} />
+      {/* ── Sidebar ── */}
+      <Sidebar user={profile} />
 
-      <main className="container mx-auto px-4 py-8 max-w-6xl">
-        {children}
+      {/* ── Main content (offset by sidebar width) ── */}
+      <main className="ml-16 lg:ml-60 min-h-screen">
+        <div className="container mx-auto px-5 py-8 max-w-5xl">
+          {children}
+        </div>
       </main>
 
       {unreadNotifications.length > 0 && (

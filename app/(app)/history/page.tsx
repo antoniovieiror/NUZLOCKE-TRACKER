@@ -32,14 +32,8 @@ function computeStandings(
   const map = new Map<string, PlayerRow>()
   for (const p of profiles) {
     map.set(p.id, {
-      id: p.id,
-      username: p.username,
-      avatar_url: p.avatar_url,
-      points: 0,
-      wins: 0,
-      losses: 0,
-      winrate: 0,
-      matchesPlayed: 0,
+      id: p.id, username: p.username, avatar_url: p.avatar_url,
+      points: 0, wins: 0, losses: 0, winrate: 0, matchesPlayed: 0,
     })
   }
 
@@ -71,7 +65,7 @@ function computeStandings(
   })
 }
 
-// ─── Rank pill (no emojis) ────────────────────────────────────────────────────
+// ─── Rank pill ────────────────────────────────────────────────────────────────
 
 function HistoryRank({ rank }: { rank: number }) {
   if (rank === 1)
@@ -82,13 +76,13 @@ function HistoryRank({ rank }: { rank: number }) {
     )
   if (rank === 2)
     return (
-      <span className="inline-flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-black bg-gradient-to-br from-slate-300 to-slate-400 text-slate-800 dark:from-slate-500 dark:to-slate-600 dark:text-slate-100">
+      <span className="inline-flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-black bg-gradient-to-br from-slate-400 to-slate-500 text-slate-100">
         2
       </span>
     )
   if (rank === 3)
     return (
-      <span className="inline-flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-black bg-gradient-to-br from-orange-300 to-amber-400 text-orange-950 dark:from-orange-600 dark:to-amber-700 dark:text-orange-100">
+      <span className="inline-flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-black bg-gradient-to-br from-orange-600 to-amber-700 text-orange-100">
         3
       </span>
     )
@@ -99,7 +93,7 @@ function HistoryRank({ rank }: { rank: number }) {
   )
 }
 
-// ─── Duration helper ───────────────────────────────────────────────────────────
+// ─── Duration helper ──────────────────────────────────────────────────────────
 
 function duration(start: string, end: string | null): string {
   if (!end) return '—'
@@ -108,11 +102,10 @@ function duration(start: string, end: string | null): string {
   if (days < 7) return `${days}d`
   const weeks = Math.round(days / 7)
   if (weeks < 5) return `${weeks}sem`
-  const months = Math.round(days / 30)
-  return `${months}mes`
+  return `${Math.round(days / 30)}mes`
 }
 
-// ─── Match result row ──────────────────────────────────────────────────────────
+// ─── Match result row ─────────────────────────────────────────────────────────
 
 function MatchResultRow({
   match,
@@ -134,7 +127,7 @@ function MatchResultRow({
   return (
     <Link
       href={`/match/${match.id}`}
-      className="flex items-center gap-2 py-1.5 px-2 rounded-lg hover:bg-muted/50 transition-colors group"
+      className="flex items-center gap-2 py-1.5 px-2 rounded-lg hover:bg-muted/40 transition-colors group"
     >
       {isVoided ? (
         <>
@@ -146,17 +139,15 @@ function MatchResultRow({
         </>
       ) : isResolved && winner && loser ? (
         <>
-          <CheckCircle2 className="h-3 w-3 text-green-500 shrink-0" />
+          <CheckCircle2 className="h-3 w-3 text-green-400 shrink-0" />
           <span className="text-xs">
-            <span className="font-bold text-green-700 dark:text-green-400">
-              {winner.username}
-            </span>
+            <span className="font-bold text-green-400">{winner.username}</span>
             <span className="text-muted-foreground/60 mx-1.5 text-[11px]">def.</span>
             <span className="text-muted-foreground">{loser.username}</span>
           </span>
           {match.status === 'admin_resolved' && (
             <span title="Admin resolved" className="ml-auto">
-              <Shield className="h-3 w-3 text-blue-400/70 shrink-0" />
+              <Shield className="h-3 w-3 text-primary/70 shrink-0" />
             </span>
           )}
         </>
@@ -166,37 +157,37 @@ function MatchResultRow({
           <span className="text-xs text-muted-foreground">
             {pA.username} vs {pB.username}
           </span>
-          <span className="ml-auto text-[10px] text-amber-500 font-semibold">PENDIENTE</span>
+          <span className="ml-auto text-[10px] text-primary/70 font-semibold">PENDIENTE</span>
         </>
       )}
     </Link>
   )
 }
 
-// ─── Champion showcase ─────────────────────────────────────────────────────────
+// ─── Champion showcase ────────────────────────────────────────────────────────
 
 function ChampionBanner({ champion }: { champion: PlayerRow }) {
   return (
-    <div className="relative overflow-hidden rounded-xl border border-amber-300/50 dark:border-amber-700/40 bg-gradient-to-b from-amber-50/80 to-white dark:from-amber-950/30 dark:to-card shadow-lg shadow-amber-100/80 dark:shadow-amber-900/20 p-5">
+    <div className="relative overflow-hidden rounded-xl border border-amber-700/40 bg-gradient-to-b from-amber-950/30 to-card shadow-lg shadow-amber-900/20 p-5">
       <div className="h-0.5 absolute top-0 inset-x-0 bg-gradient-to-r from-transparent via-amber-400/60 to-transparent" />
-      <Trophy className="absolute -right-2 -top-2 h-20 w-20 text-amber-300/20 dark:text-amber-600/12 rotate-12 pointer-events-none" />
+      <Trophy className="absolute -right-2 -top-2 h-20 w-20 text-amber-600/12 rotate-12 pointer-events-none" />
 
-      <p className="text-[10px] font-black text-amber-600 dark:text-amber-400 uppercase tracking-[0.18em] mb-4 flex items-center gap-1.5">
-        <Crown className="h-3 w-3 fill-amber-500 dark:fill-amber-400" strokeWidth={0} />
+      <p className="text-[10px] font-black text-amber-400 uppercase tracking-[0.18em] mb-4 flex items-center gap-1.5">
+        <Crown className="h-3 w-3 fill-amber-400" strokeWidth={0} />
         Campeón de temporada
       </p>
 
       <div className="flex items-center gap-4">
         <Link href={`/profile/${champion.id}`} className="shrink-0 group">
           <div className="relative">
-            <Avatar className="h-14 w-14 ring-2 ring-amber-300/60 dark:ring-amber-600/40 shadow-md shadow-amber-200/50 dark:shadow-amber-800/30 transition-transform duration-200 group-hover:scale-105 rank-glow-gold">
+            <Avatar className="h-14 w-14 ring-2 ring-amber-600/40 shadow-md shadow-amber-800/30 transition-transform duration-200 group-hover:scale-105 rank-glow-gold">
               <AvatarImage src={champion.avatar_url ?? undefined} />
-              <AvatarFallback className="text-lg font-black bg-gradient-to-br from-amber-100 to-yellow-100 text-amber-800 dark:from-amber-900 dark:to-yellow-900 dark:text-amber-200">
+              <AvatarFallback className="text-lg font-black bg-gradient-to-br from-amber-900 to-yellow-900 text-amber-200">
                 {champion.username.slice(0, 2).toUpperCase()}
               </AvatarFallback>
             </Avatar>
             <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-              <Crown className="h-4 w-4 text-amber-500 dark:text-amber-400 fill-amber-400 dark:fill-amber-400" strokeWidth={1} />
+              <Crown className="h-4 w-4 text-amber-400 fill-amber-400" strokeWidth={1} />
             </div>
           </div>
         </Link>
@@ -204,20 +195,20 @@ function ChampionBanner({ champion }: { champion: PlayerRow }) {
         <div className="min-w-0">
           <Link
             href={`/profile/${champion.id}`}
-            className="font-black text-lg leading-tight text-amber-900 dark:text-amber-200 hover:underline underline-offset-4 truncate block tracking-tight"
+            className="font-black text-lg leading-tight text-amber-200 hover:underline underline-offset-4 truncate block tracking-tight"
           >
             {champion.username}
           </Link>
           <div className="flex items-center gap-4 mt-1">
-            <span className="text-2xl font-black tabular-nums text-amber-700 dark:text-amber-400 leading-none">
+            <span className="text-2xl font-black tabular-nums text-amber-400 leading-none">
               {champion.points}
               <span className="text-xs font-normal ml-0.5 text-amber-500/70">pts</span>
             </span>
             <div className="text-xs space-y-0.5">
               <p>
-                <span className="text-green-600 dark:text-green-400 font-bold">{champion.wins}V</span>
+                <span className="text-green-400 font-bold">{champion.wins}V</span>
                 {' '}
-                <span className="text-red-500 dark:text-red-400 font-bold">{champion.losses}D</span>
+                <span className="text-red-400 font-bold">{champion.losses}D</span>
               </p>
               <p className="text-muted-foreground">{champion.winrate.toFixed(1)}% winrate</p>
             </div>
@@ -228,13 +219,10 @@ function ChampionBanner({ champion }: { champion: PlayerRow }) {
   )
 }
 
-// ─── League card ───────────────────────────────────────────────────────────────
+// ─── League card ──────────────────────────────────────────────────────────────
 
 function LeagueCard({
-  league,
-  standings,
-  matches,
-  profileMap,
+  league, standings, matches, profileMap,
 }: {
   league: League
   standings: PlayerRow[]
@@ -255,23 +243,18 @@ function LeagueCard({
 
   const dur = duration(league.created_at, league.closed_at)
   const closedDate = league.closed_at
-    ? new Date(league.closed_at).toLocaleDateString('es-ES', {
-        month: 'long',
-        day: 'numeric',
-        year: 'numeric',
-      })
+    ? new Date(league.closed_at).toLocaleDateString('es-ES', { month: 'long', day: 'numeric', year: 'numeric' })
     : '—'
 
   return (
     <section className="space-y-4">
-      {/* League header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-700 shrink-0 border border-border/50">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-muted/40 shrink-0 border border-border/50">
             <Swords className="h-5 w-5 text-muted-foreground" strokeWidth={1.5} />
           </div>
           <div>
-            <h2 className="font-black text-xl leading-tight tracking-tight">{league.title}</h2>
+            <h2 className="font-heading font-700 text-xl leading-tight tracking-widest uppercase">{league.title}</h2>
             <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
               <Calendar className="h-3 w-3" />
               <span>Cerrada el {closedDate}</span>
@@ -293,14 +276,11 @@ function LeagueCard({
         </div>
       </div>
 
-      {/* Content grid */}
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-4 items-start">
-
-        {/* Left: Champion + Standings */}
         <div className="space-y-3">
           {champion && <ChampionBanner champion={champion} />}
 
-          <Card className="overflow-hidden">
+          <Card className="overflow-hidden border-border/50">
             <CardHeader className="pb-2 border-b border-border/40">
               <CardTitle className="text-xs font-black text-muted-foreground uppercase tracking-[0.15em]">
                 Clasificación Final
@@ -323,19 +303,11 @@ function LeagueCard({
                     return (
                       <TableRow
                         key={row.id}
-                        className={cn(
-                          'transition-colors border-border/30',
-                          rank === 1 && 'bg-amber-50/50 dark:bg-amber-950/15'
-                        )}
+                        className={cn('transition-colors border-border/20', rank === 1 && 'bg-amber-950/15')}
                       >
-                        <TableCell className="text-center pl-4">
-                          <HistoryRank rank={rank} />
-                        </TableCell>
+                        <TableCell className="text-center pl-4"><HistoryRank rank={rank} /></TableCell>
                         <TableCell>
-                          <Link
-                            href={`/profile/${row.id}`}
-                            className="flex items-center gap-2 group w-fit"
-                          >
+                          <Link href={`/profile/${row.id}`} className="flex items-center gap-2 group w-fit">
                             <Avatar className="h-6 w-6 shrink-0">
                               <AvatarImage src={row.avatar_url ?? undefined} />
                               <AvatarFallback className="text-[10px] font-bold">
@@ -347,13 +319,13 @@ function LeagueCard({
                             </span>
                           </Link>
                         </TableCell>
-                        <TableCell className="text-right font-black tabular-nums">
+                        <TableCell className="text-right font-black tabular-nums text-primary">
                           {row.points}
                         </TableCell>
                         <TableCell className="text-right tabular-nums text-sm hidden sm:table-cell">
-                          <span className="text-green-600 dark:text-green-400 font-semibold">{row.wins}</span>
+                          <span className="text-green-400 font-semibold">{row.wins}</span>
                           <span className="text-muted-foreground/40 mx-1">—</span>
-                          <span className="text-red-500 dark:text-red-400 font-semibold">{row.losses}</span>
+                          <span className="text-red-400 font-semibold">{row.losses}</span>
                         </TableCell>
                         <TableCell className="text-right pr-4 tabular-nums text-sm text-muted-foreground hidden sm:table-cell">
                           {row.winrate.toFixed(1)}%
@@ -367,8 +339,7 @@ function LeagueCard({
           </Card>
         </div>
 
-        {/* Right: Match Results */}
-        <Card className="self-start overflow-hidden">
+        <Card className="self-start overflow-hidden border-border/50">
           <CardHeader className="pb-2 border-b border-border/40">
             <CardTitle className="text-xs font-black text-muted-foreground uppercase tracking-[0.15em]">
               Resultados
@@ -385,7 +356,7 @@ function LeagueCard({
   )
 }
 
-// ─── History hero banner ───────────────────────────────────────────────────────
+// ─── History hero banner ──────────────────────────────────────────────────────
 
 function HistoryHero({ subtitle }: { subtitle: string }) {
   return (
@@ -398,28 +369,26 @@ function HistoryHero({ subtitle }: { subtitle: string }) {
       >
         <defs>
           <linearGradient id="hhBase" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0%" stopColor="#09080D"/>
-            <stop offset="100%" stopColor="#05050A"/>
+            <stop offset="0%" stopColor="#07060c"/>
+            <stop offset="100%" stopColor="#040508"/>
           </linearGradient>
           <radialGradient id="hhGlow" cx="50%" cy="80%" r="60%">
-            <stop offset="0%" stopColor="#8B5CF6" stopOpacity="0.14"/>
-            <stop offset="100%" stopColor="#8B5CF6" stopOpacity="0"/>
+            <stop offset="0%" stopColor="#4060ff" stopOpacity="0.12"/>
+            <stop offset="100%" stopColor="#4060ff" stopOpacity="0"/>
           </radialGradient>
           <radialGradient id="hhLeft" cx="8%" cy="50%" r="50%">
-            <stop offset="0%" stopColor="#F59E0B" stopOpacity="0.08"/>
-            <stop offset="100%" stopColor="#F59E0B" stopOpacity="0"/>
+            <stop offset="0%" stopColor="#00c8e8" stopOpacity="0.08"/>
+            <stop offset="100%" stopColor="#00c8e8" stopOpacity="0"/>
           </radialGradient>
           <radialGradient id="hhRight" cx="92%" cy="50%" r="50%">
-            <stop offset="0%" stopColor="#A78BFA" stopOpacity="0.08"/>
-            <stop offset="100%" stopColor="#A78BFA" stopOpacity="0"/>
+            <stop offset="0%" stopColor="#4060ff" stopOpacity="0.08"/>
+            <stop offset="100%" stopColor="#4060ff" stopOpacity="0"/>
           </radialGradient>
           <linearGradient id="hhMtn" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#0E0C18"/>
-            <stop offset="100%" stopColor="#07060C"/>
+            <stop offset="0%" stopColor="#0c0e20"/>
+            <stop offset="100%" stopColor="#06060a"/>
           </linearGradient>
-          <filter id="hhBlur">
-            <feGaussianBlur stdDeviation="7"/>
-          </filter>
+          <filter id="hhBlur"><feGaussianBlur stdDeviation="7"/></filter>
         </defs>
 
         <rect width="1200" height="200" fill="url(#hhBase)"/>
@@ -427,68 +396,59 @@ function HistoryHero({ subtitle }: { subtitle: string }) {
         <rect width="1200" height="200" fill="url(#hhLeft)"/>
         <rect width="1200" height="200" fill="url(#hhRight)"/>
 
-        {/* Stars — denser, dimmer (archive feel) */}
         {[[55,10],[120,18],[200,8],[310,14],[430,6],[550,12],[680,9],[800,16],[920,7],[1040,13],[1160,20],[1180,5],[90,30],[380,28],[700,32],[1000,26]].map(([x,y],i) => (
           <circle key={i} cx={x} cy={y} r={i%4===0?0.85:0.5} fill="white" opacity={0.12+((i*11)%5)*0.05}/>
         ))}
 
-        {/* Topographic contour layers — layered depth */}
-        <g stroke="rgba(139,92,246,0.028)" strokeWidth="0.7" fill="none">
+        <g stroke="rgba(64,96,255,0.025)" strokeWidth="0.7" fill="none">
           <ellipse cx="180" cy="100" rx="170" ry="108"/>
           <ellipse cx="180" cy="100" rx="126" ry="80"/>
           <ellipse cx="180" cy="100" rx="84" ry="52"/>
           <ellipse cx="180" cy="100" rx="46" ry="29"/>
         </g>
-        <g stroke="rgba(139,92,246,0.022)" strokeWidth="0.6" fill="none">
+        <g stroke="rgba(0,200,232,0.020)" strokeWidth="0.6" fill="none">
           <ellipse cx="1020" cy="95" rx="155" ry="100"/>
           <ellipse cx="1020" cy="95" rx="112" ry="72"/>
           <ellipse cx="1020" cy="95" rx="72" ry="46"/>
         </g>
-        {/* Centre faint ring — trophy watermark hint */}
-        <g stroke="rgba(245,158,11,0.06)" strokeWidth="0.8" fill="none">
+        <g stroke="rgba(245,158,11,0.055)" strokeWidth="0.8" fill="none">
           <circle cx="600" cy="100" r="68"/>
           <circle cx="600" cy="100" r="50"/>
           <circle cx="600" cy="100" r="34"/>
         </g>
-        {/* Trophy cup simplified outline */}
         <path d="M588,68 L612,68 L614,82 C622,82 628,88 628,96 C628,104 622,110 614,110 L612,118 L620,122 L580,122 L588,118 L586,110 C578,110 572,104 572,96 C572,88 578,82 586,82 Z"
-          fill="none" stroke="rgba(245,158,11,0.07)" strokeWidth="0.8"/>
+          fill="none" stroke="rgba(245,158,11,0.06)" strokeWidth="0.8"/>
 
-        {/* Mountains silhouette */}
         <path d="M0,200 L70,150 L150,165 L240,138 L360,158 L480,130 L600,148 L720,125 L840,145 L960,122 L1080,142 L1170,130 L1200,135 L1200,200Z" fill="url(#hhMtn)" opacity="0.9"/>
 
-        {/* Soft beam from centre — faded purple */}
         <g opacity="0.05" filter="url(#hhBlur)">
-          <line x1="600" y1="200" x2="520" y2="0" stroke="#8B5CF6" strokeWidth="80"/>
-          <line x1="600" y1="200" x2="680" y2="0" stroke="#8B5CF6" strokeWidth="60"/>
+          <line x1="600" y1="200" x2="520" y2="0" stroke="#00c8e8" strokeWidth="80"/>
+          <line x1="600" y1="200" x2="680" y2="0" stroke="#4060ff" strokeWidth="60"/>
         </g>
 
-        {/* Ground platform */}
-        <ellipse cx="600" cy="198" rx="130" ry="8" fill="rgba(139,92,246,0.3)" filter="url(#hhBlur)"/>
-        <ellipse cx="600" cy="198" rx="90" ry="6" fill="none" stroke="rgba(139,92,246,0.35)" strokeWidth="0.6" opacity="0.35"/>
+        <ellipse cx="600" cy="198" rx="130" ry="8" fill="rgba(0,200,232,0.25)" filter="url(#hhBlur)"/>
+        <ellipse cx="600" cy="198" rx="90" ry="6" fill="none" stroke="rgba(0,200,232,0.35)" strokeWidth="0.6" opacity="0.35"/>
 
-        {/* Corner ring accents */}
         <circle cx="30" cy="200" r="65" fill="none" stroke="rgba(255,255,255,0.016)" strokeWidth="0.6"/>
         <circle cx="1170" cy="195" r="75" fill="none" stroke="rgba(255,255,255,0.016)" strokeWidth="0.6"/>
       </svg>
 
-      {/* Top accent — amber to violet (archive palette) */}
-      <div className="absolute top-0 inset-x-0 h-0.5 bg-gradient-to-r from-amber-500/40 via-violet-400/50 to-amber-500/40"/>
+      <div className="absolute top-0 inset-x-0 h-0.5 bg-gradient-to-r from-primary/40 via-blue-400/50 to-primary/40"/>
 
-      {/* Content */}
       <div className="relative px-8 py-7 flex flex-col sm:flex-row sm:items-end gap-4">
         <div className="flex-1">
-          <p className="text-[10px] font-black uppercase tracking-[0.30em] text-violet-400/60 mb-2">
+          <p className="text-[10px] font-black uppercase tracking-[0.30em] text-primary/60 mb-2">
             Hall of Champions
           </p>
-          <h1 className="text-3xl sm:text-4xl font-black tracking-tighter leading-none text-white/95 mb-1.5">
-            Archivo de <span className="bg-gradient-to-r from-amber-400 to-violet-400 bg-clip-text text-transparent">Ligas</span>
+          <h1 className="font-heading text-4xl sm:text-5xl font-700 tracking-widest leading-none text-white/95 mb-1.5 uppercase">
+            Archivo de{' '}
+            <span className="text-primary drop-shadow-[0_0_15px_rgba(0,200,232,0.4)]">Ligas</span>
           </h1>
           <p className="text-sm text-white/35 font-medium">{subtitle}</p>
         </div>
         <div className="shrink-0">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-500/15 to-amber-500/15 border border-violet-500/25 shadow-lg shadow-violet-500/10">
-            <Trophy className="h-5 w-5 text-amber-400" strokeWidth={2}/>
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 border border-primary/25 shadow-lg shadow-primary/10">
+            <Trophy className="h-5 w-5 text-primary" strokeWidth={2}/>
           </div>
         </div>
       </div>
@@ -496,7 +456,7 @@ function HistoryHero({ subtitle }: { subtitle: string }) {
   )
 }
 
-// ─── Page ──────────────────────────────────────────────────────────────────────
+// ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default async function HistoryPage() {
   const supabase = await createClient()
@@ -513,7 +473,7 @@ export default async function HistoryPage() {
     return (
       <div className="space-y-6 pb-10">
         <HistoryHero subtitle="Ninguna temporada completada todavía" />
-        <Card>
+        <Card className="border-border/50">
           <CardContent className="py-16 text-center space-y-1">
             <p className="text-sm font-semibold text-muted-foreground">Ninguna temporada completada</p>
             <p className="text-xs text-muted-foreground">
@@ -547,18 +507,12 @@ export default async function HistoryPage() {
 
   const leagueData = leagues.map((league) => {
     const matches = allMatches.filter((m) => m.league_id === league.id)
-    const participantIds = [
-      ...new Set(matches.flatMap((m) => [m.player_a_id, m.player_b_id])),
-    ]
+    const participantIds = [...new Set(matches.flatMap((m) => [m.player_a_id, m.player_b_id]))]
     const participants = participantIds
       .map((id) => profileMap.get(id))
       .filter((p): p is Pick<Profile, 'id' | 'username' | 'avatar_url'> => !!p)
 
-    return {
-      league,
-      matches,
-      standings: computeStandings(matches, participants),
-    }
+    return { league, matches, standings: computeStandings(matches, participants) }
   })
 
   const historySubtitle = `${leagues.length} temporada${leagues.length !== 1 ? 's' : ''} completada${leagues.length !== 1 ? 's' : ''} · registro permanente`
@@ -566,10 +520,8 @@ export default async function HistoryPage() {
   return (
     <div className="space-y-10 pb-10">
 
-      {/* ── Hero ── */}
       <HistoryHero subtitle={historySubtitle} />
 
-      {/* ── Hall of Champions strip ── */}
       {leagueData.length > 1 && (
         <div className="space-y-2">
           <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.18em]">
@@ -582,34 +534,24 @@ export default async function HistoryPage() {
               return (
                 <div
                   key={league.id}
-                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-amber-200/80 dark:border-amber-800/50 bg-amber-50/60 dark:bg-amber-950/20 text-xs"
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-amber-800/50 bg-amber-950/20 text-xs"
                 >
-                  <Crown className="h-3 w-3 text-amber-500 fill-amber-400" strokeWidth={0} />
-                  <span className="font-bold text-amber-800 dark:text-amber-300">
-                    {champ.username}
-                  </span>
+                  <Crown className="h-3 w-3 text-amber-400 fill-amber-400" strokeWidth={0} />
+                  <span className="font-bold text-amber-300">{champ.username}</span>
                   <span className="text-muted-foreground/40">·</span>
-                  <span className="text-muted-foreground truncate max-w-[100px]">
-                    {league.title}
-                  </span>
+                  <span className="text-muted-foreground truncate max-w-[100px]">{league.title}</span>
                 </div>
               )
             })}
           </div>
-          <Separator className="mt-4 opacity-50" />
+          <Separator className="mt-4 opacity-30" />
         </div>
       )}
 
-      {/* ── Season cards ── */}
       {leagueData.map(({ league, standings, matches }, i) => (
         <div key={league.id}>
-          <LeagueCard
-            league={league}
-            standings={standings}
-            matches={matches}
-            profileMap={profileMap}
-          />
-          {i < leagueData.length - 1 && <Separator className="mt-10 opacity-50" />}
+          <LeagueCard league={league} standings={standings} matches={matches} profileMap={profileMap} />
+          {i < leagueData.length - 1 && <Separator className="mt-10 opacity-30" />}
         </div>
       ))}
     </div>

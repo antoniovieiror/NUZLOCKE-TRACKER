@@ -31,14 +31,14 @@ function H2HBar({ aWins, bWins, aName, bName }: { aWins: number; bWins: number; 
           <div className="flex-1 bg-muted rounded-full"/>
         ) : (
           <>
-            <div className="bg-blue-400 dark:bg-blue-500 rounded-l-full transition-all duration-700" style={{width:`${aPct}%`}}/>
-            <div className="bg-rose-400 dark:bg-rose-500 rounded-r-full transition-all duration-700" style={{width:`${bPct}%`}}/>
+            <div className="bg-primary rounded-l-full transition-all duration-700" style={{width:`${aPct}%`}}/>
+            <div className="bg-rose-500 rounded-r-full transition-all duration-700" style={{width:`${bPct}%`}}/>
           </>
         )}
       </div>
       <div className="flex justify-between text-[11px] font-bold">
-        <span className="text-blue-500 dark:text-blue-400">{aName}{total > 0 ? ` ${aPct}%` : ''}</span>
-        <span className="text-rose-500 dark:text-rose-400">{total > 0 ? `${bPct}% ` : ''}{bName}</span>
+        <span className="text-primary">{aName}{total > 0 ? ` ${aPct}%` : ''}</span>
+        <span className="text-rose-400">{total > 0 ? `${bPct}% ` : ''}{bName}</span>
       </div>
     </div>
   )
@@ -61,7 +61,6 @@ function VSHero({
 
   return (
     <div className="relative overflow-hidden rounded-2xl border border-white/8 shadow-xl">
-      {/* Battle arena SVG background */}
       <svg
         className="absolute inset-0 w-full h-full"
         viewBox="0 0 600 200"
@@ -70,13 +69,13 @@ function VSHero({
       >
         <defs>
           <linearGradient id="vsBase" x1="0" y1="0" x2="1" y2="0">
-            <stop offset="0%" stopColor="#0A0E1F"/>
+            <stop offset="0%" stopColor="#080c1c"/>
             <stop offset="50%" stopColor="#060810"/>
-            <stop offset="100%" stopColor="#0A0E1F"/>
+            <stop offset="100%" stopColor="#080c1c"/>
           </linearGradient>
           <radialGradient id="leftArena" cx="15%" cy="50%" r="55%">
-            <stop offset="0%" stopColor="#3B82F6" stopOpacity={isResolved && !aWon ? "0.02" : "0.12"}/>
-            <stop offset="100%" stopColor="#3B82F6" stopOpacity="0"/>
+            <stop offset="0%" stopColor="#00c8e8" stopOpacity={isResolved && !aWon ? "0.02" : "0.12"}/>
+            <stop offset="100%" stopColor="#00c8e8" stopOpacity="0"/>
           </radialGradient>
           <radialGradient id="rightArena" cx="85%" cy="50%" r="55%">
             <stop offset="0%" stopColor="#F43F5E" stopOpacity={isResolved && !bWon ? "0.02" : "0.10"}/>
@@ -97,22 +96,21 @@ function VSHero({
         {(aWon || bWon) && <rect width="600" height="200" fill="url(#winGlow)"/>}
         <rect width="600" height="200" fill="url(#centerClash)"/>
 
-        {/* Terrain contour lines */}
-        <g stroke="rgba(255,255,255,0.022)" strokeWidth="0.6" fill="none">
+        <g stroke="rgba(0,200,232,0.025)" strokeWidth="0.6" fill="none">
           <ellipse cx="150" cy="100" rx="100" ry="80"/>
           <ellipse cx="150" cy="100" rx="72" ry="56"/>
           <ellipse cx="150" cy="100" rx="44" ry="34"/>
+        </g>
+        <g stroke="rgba(244,63,94,0.020)" strokeWidth="0.6" fill="none">
           <ellipse cx="450" cy="100" rx="100" ry="80"/>
           <ellipse cx="450" cy="100" rx="72" ry="56"/>
           <ellipse cx="450" cy="100" rx="44" ry="34"/>
         </g>
 
-        {/* Center divider energy line */}
         <line x1="300" y1="0" x2="300" y2="200" stroke="rgba(255,255,255,0.06)" strokeWidth="0.5"/>
         <line x1="295" y1="30" x2="305" y2="30" stroke="rgba(255,255,255,0.12)" strokeWidth="1"/>
         <line x1="295" y1="170" x2="305" y2="170" stroke="rgba(255,255,255,0.12)" strokeWidth="1"/>
 
-        {/* VS / clash spark in center */}
         {!isResolved && (
           <>
             <circle cx="300" cy="100" r="18" fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="0.5"/>
@@ -120,34 +118,31 @@ function VSHero({
           </>
         )}
 
-        {/* Ground platform lines */}
-        <line x1="50" y1="175" x2="250" y2="175" stroke="rgba(59,130,246,0.15)" strokeWidth="0.6"/>
+        <line x1="50" y1="175" x2="250" y2="175" stroke="rgba(0,200,232,0.18)" strokeWidth="0.6"/>
         <line x1="350" y1="175" x2="550" y2="175" stroke="rgba(244,63,94,0.15)" strokeWidth="0.6"/>
       </svg>
 
-      {/* Top status bar */}
       <div className={cn(
         'absolute top-0 inset-x-0 h-0.5',
         isVoided ? 'bg-muted'
-        : isResolved ? 'bg-gradient-to-r from-blue-500 via-green-400 to-rose-500'
-        : 'bg-gradient-to-r from-blue-400 via-white/20 to-rose-400'
+        : isResolved ? 'bg-gradient-to-r from-primary via-green-400 to-rose-500'
+        : 'bg-gradient-to-r from-primary via-white/20 to-rose-400'
       )}/>
 
-      {/* Player grid */}
       <div className="relative grid grid-cols-[1fr_72px_1fr]">
 
         {/* Player A */}
         <div className={cn(
           'flex flex-col items-center gap-3 p-6 transition-all duration-300',
-          aWon ? 'opacity-100' : isResolved && !aWon ? 'opacity-35' : 'opacity-100'
+          aWon ? 'opacity-100' : isResolved && !aWon ? 'opacity-30' : 'opacity-100'
         )}>
           <Avatar className={cn(
             'h-16 w-16 sm:h-20 sm:w-20 ring-2 transition-all duration-300',
-            aWon ? 'ring-green-400 dark:ring-green-500 scale-110 shadow-lg shadow-green-500/25'
-            : 'ring-blue-400/40 dark:ring-blue-500/30'
+            aWon ? 'ring-green-400 scale-110 shadow-lg shadow-green-500/25'
+            : 'ring-primary/40'
           )}>
             <AvatarImage src={playerA.avatar_url ?? undefined}/>
-            <AvatarFallback className="text-xl font-black bg-blue-950/80 text-blue-300 border-0">
+            <AvatarFallback className="text-xl font-black bg-cyan-950/80 text-cyan-300 border-0">
               {playerA.username.slice(0, 2).toUpperCase()}
             </AvatarFallback>
           </Avatar>
@@ -161,7 +156,7 @@ function VSHero({
           )}
         </div>
 
-        {/* Center VS / result */}
+        {/* Center */}
         <div className="flex flex-col items-center justify-center gap-2 border-x border-white/5 bg-black/20">
           <Swords className={cn(
             'h-5 w-5',
@@ -180,12 +175,12 @@ function VSHero({
         {/* Player B */}
         <div className={cn(
           'flex flex-col items-center gap-3 p-6 transition-all duration-300',
-          bWon ? 'opacity-100' : isResolved && !bWon ? 'opacity-35' : 'opacity-100'
+          bWon ? 'opacity-100' : isResolved && !bWon ? 'opacity-30' : 'opacity-100'
         )}>
           <Avatar className={cn(
             'h-16 w-16 sm:h-20 sm:w-20 ring-2 transition-all duration-300',
-            bWon ? 'ring-green-400 dark:ring-green-500 scale-110 shadow-lg shadow-green-500/25'
-            : 'ring-rose-400/40 dark:ring-rose-500/30'
+            bWon ? 'ring-green-400 scale-110 shadow-lg shadow-green-500/25'
+            : 'ring-rose-400/40'
           )}>
             <AvatarImage src={playerB.avatar_url ?? undefined}/>
             <AvatarFallback className="text-xl font-black bg-rose-950/80 text-rose-300 border-0">
@@ -206,7 +201,7 @@ function VSHero({
   )
 }
 
-// ─── Page ──────────────────────────────────────────────────────────────────────
+// ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default async function MatchPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -275,7 +270,7 @@ export default async function MatchPage({ params }: { params: Promise<{ id: stri
   return (
     <div className="space-y-5 pb-10 max-w-xl mx-auto">
 
-      {/* ── Breadcrumb ── */}
+      {/* Breadcrumb */}
       <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
         <Link href="/" className="hover:text-foreground transition-colors">Clasificación</Link>
         <ChevronRight className="h-3.5 w-3.5 opacity-40"/>
@@ -288,15 +283,12 @@ export default async function MatchPage({ params }: { params: Promise<{ id: stri
         <span className="text-foreground font-semibold">Partida</span>
       </div>
 
-      {/* ── Battle Arena VS ── */}
       <VSHero playerA={playerA} playerB={playerB} winnerId={match.winner_id} status={match.status}/>
 
-      {/* ── H2H ── */}
       <H2HBar aWins={h2h.aWins} bWins={h2h.bWins} aName={playerA.username} bName={playerB.username}/>
 
-      <Separator className="opacity-40"/>
+      <Separator className="opacity-30"/>
 
-      {/* ── Vote card ── */}
       {currentUserId && (
         <VoteCard
           matchId={match.id}
@@ -322,7 +314,6 @@ export default async function MatchPage({ params }: { params: Promise<{ id: stri
         </Card>
       )}
 
-      {/* ── Admin controls ── */}
       {isAdmin && (
         <AdminControls
           matchId={match.id}
