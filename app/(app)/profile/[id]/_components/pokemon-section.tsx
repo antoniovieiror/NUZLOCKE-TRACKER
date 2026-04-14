@@ -117,6 +117,7 @@ interface PokemonCardProps {
   onNicknameChange: (nickname: string) => void
   onToggleMvp: () => void
   isTeam: boolean // crown only on team cards
+  compact?: boolean
 }
 
 function PokemonCard({
@@ -128,6 +129,7 @@ function PokemonCard({
   onNicknameChange,
   onToggleMvp,
   isTeam,
+  compact = false,
 }: PokemonCardProps) {
   const [sprite, setSprite] = useState<string | null>(null)
 
@@ -152,7 +154,7 @@ function PokemonCard({
       <NicknameEditor nickname={entry.nickname} canEdit={canEdit} onSave={onNicknameChange} />
 
       {/* Sprite container */}
-      <div className="relative w-16 h-16 sm:w-20 sm:h-20">
+      <div className={cn('relative', compact ? 'w-12 h-12 sm:w-14 sm:h-14' : 'w-16 h-16 sm:w-20 sm:h-20')}>
         {sprite ? (
           <img
             src={sprite}
@@ -206,7 +208,10 @@ function PokemonCard({
       </div>
 
       {/* Species name */}
-      <span className="text-[11px] text-muted-foreground capitalize text-center leading-tight max-w-[80px] truncate">
+      <span className={cn(
+        'text-muted-foreground capitalize text-center leading-tight truncate',
+        compact ? 'text-[10px] max-w-[56px]' : 'text-[11px] max-w-[80px]'
+      )}>
         {entry.species.replace(/-/g, ' ')}
       </span>
     </div>
@@ -312,6 +317,7 @@ function PokemonGrid({
   onNicknameChange,
   onToggleMvp,
   slots,
+  compact = false,
   addDisabled,
   addDisabledReason,
   emptyMessage = 'Nada aquí todavía.',
@@ -326,6 +332,7 @@ function PokemonGrid({
   onNicknameChange: (index: number, nickname: string) => void
   onToggleMvp: (species: string) => void
   slots?: number
+  compact?: boolean
   addDisabled?: boolean
   addDisabledReason?: string
   emptyMessage?: string
@@ -340,8 +347,9 @@ function PokemonGrid({
         <p className="text-sm text-muted-foreground py-6 text-center">{emptyMessage}</p>
       ) : (
         <div className={cn(
-          'grid gap-3',
-          slots === 6 ? 'grid-cols-3 sm:grid-cols-6' : 'grid-cols-4 sm:grid-cols-6 md:grid-cols-8'
+          'grid',
+          compact ? 'gap-2 grid-cols-5 sm:grid-cols-8 md:grid-cols-10 lg:grid-cols-12' :
+          slots === 6 ? 'gap-3 grid-cols-3 sm:grid-cols-6' : 'gap-3 grid-cols-4 sm:grid-cols-6 md:grid-cols-8'
         )}>
           {cells.map((entry, i) =>
             entry ? (
@@ -352,6 +360,7 @@ function PokemonGrid({
                 editMode={editMode}
                 isMvp={isTeam && entry.species === mvpSpecies}
                 isTeam={isTeam}
+                compact={compact}
                 onRemove={() => onRemove(i)}
                 onNicknameChange={(nick) => onNicknameChange(i, nick)}
                 onToggleMvp={() => onToggleMvp(entry.species)}
@@ -561,6 +570,7 @@ export function PokemonSection({
             editMode={boxEditMode}
             mvpSpecies={null}
             isTeam={false}
+            compact={box.length > 8}
             onRemove={removeFromBox}
             onAdd={addToBox}
             onNicknameChange={updateBoxNickname}

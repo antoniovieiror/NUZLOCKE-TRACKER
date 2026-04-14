@@ -63,6 +63,16 @@ export interface LeaderboardEntry {
   winrate: number
 }
 
+export interface GlobalNotification {
+  id: string
+  title: string
+  subtitle: string | null
+  body: string
+  sent_by_id: string
+  sent_by_username: string
+  created_at: string
+}
+
 // Match with joined profile data (for display)
 export interface MatchWithProfiles extends Match {
   player_a: Pick<Profile, 'id' | 'username' | 'avatar_url'>

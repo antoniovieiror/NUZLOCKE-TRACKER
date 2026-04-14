@@ -1,18 +1,14 @@
 /**
  * Parser for RPG Maker XP / Pokémon Essentials .rxdata save files.
  *
- * Format confirmed from hex dump of a real save:
- *  - Ruby Marshal 4.8 (magic: 0x04 0x08)
- *  - Top-level object: PokeBattle_Trainer
- *  - @party → Array of up to 6 PokeBattle_Pokemon objects (41 ivars each)
- *  - PokeBattle_Pokemon @name   → Ruby String  → player nickname
- *  - PokeBattle_Pokemon @species → Ruby Fixnum → national dex ID (PokéAPI-compatible)
- *  - PokeBattle_Trainer @badges  → Array<bool>  → true = badge earned
+ * A PE save file is a series of concatenated Ruby Marshal 4.8 streams
+ * (one Marshal.dump per game variable). Each stream starts with 0x04 0x08.
  *
- * Species IDs follow the national dex (700 = Sylveon, 493 = Arceus, etc.)
- * PokéAPI accepts numeric IDs directly, so we return them as strings.
+ * We iterate over all streams and collect:
+ *   - PokeBattle_Trainer  → @party (team), @badges
+ *   - PokemonStorage / PokemonBoxStorage  → @boxes[0].@pokemon (PC Box 1)
  *
- * Box (PC storage) is not at the top level of this save layout — skipped per spec.
+ * Species IDs follow the national dex; PokéAPI accepts them as numeric IDs.
  */
 
 // ─── Public types ─────────────────────────────────────────────────────────────
@@ -20,14 +16,14 @@
 export interface ParsedPokemon {
   /** National dex ID as a string (e.g. "700"). PokéAPI accepts this directly. */
   speciesId: string
-  /** In-game nickname (leading gender byte stripped if present). */
+  /** In-game nickname (gender byte stripped, uppercased). */
   nickname: string
 }
 
 export interface ParsedSaveData {
   party: ParsedPokemon[]
-  box1: ParsedPokemon[]   // always empty for this save format; box is stored separately
-  badgeCount: number       // count of true values in @badges array
+  box1: ParsedPokemon[]
+  badgeCount: number
 }
 
 export class RxdataParseError extends Error {
@@ -56,35 +52,28 @@ function isMarshalObject(v: MarshalValue): v is MarshalObject {
   return typeof v === 'object' && v !== null && !Array.isArray(v) && 'className' in v
 }
 
-// ─── Parser ───────────────────────────────────────────────────────────────────
+function isStorageClass(name: string): boolean {
+  const n = name.toLowerCase()
+  return n.includes('storage') && n.includes('pokemon')
+}
 
-export function parseRxdata(buffer: ArrayBuffer): ParsedSaveData {
-  const u8 = new Uint8Array(buffer)
-  let pos = 0
+// ─── Single-stream parser factory ────────────────────────────────────────────
+// Returns a function that reads one value from the shared byte array.
+// symTable and objTable are per-stream (reset between streams).
 
+function makeStreamReader(u8: Uint8Array, startPos: number) {
+  let pos = startPos
   const symTable: string[] = []
-  // Object table: every string, array, object, bignum adds itself here.
-  // We store MarshalValue | undefined so back-refs resolve correctly.
-  const objTable: Array<MarshalValue> = []
-
-  // ── Low-level readers ──────────────────────────────────────────────────────
+  const objTable: MarshalValue[] = []
 
   function readByte(): number {
     if (pos >= u8.length) throw new RxdataParseError('Unexpected end of file')
     return u8[pos++]
   }
 
-  /**
-   * Ruby Marshal integer encoding (matches r_long in Ruby source):
-   *   0x00       → 0
-   *   0x01..0x04 → read 1–4 bytes little-endian (unsigned)
-   *   0x05..0x7f → byte − 5  (positive small, 0..122)
-   *   0x80..0xfb → (byte − 256) + 5  (negative small, −123..−2)
-   *   0xfc..0xff → read 1–4 bytes little-endian (signed, negative multi-byte)
-   */
   function readInt(): number {
     const raw = readByte()
-    const c = raw > 127 ? raw - 256 : raw   // interpret as signed byte
+    const c = raw > 127 ? raw - 256 : raw
 
     if (c === 0) return 0
     if (c > 4) return c - 5
@@ -96,7 +85,6 @@ export function parseRxdata(buffer: ArrayBuffer): ParsedSaveData {
       return x
     }
 
-    // c in [-4, -1]: negative multi-byte, sign-extend from -1
     let x = -1
     const n = -c
     for (let i = 0; i < n; i++) {
@@ -112,39 +100,31 @@ export function parseRxdata(buffer: ArrayBuffer): ParsedSaveData {
     return slice
   }
 
-  /** Read a length-prefixed byte array and decode as Latin-1. */
   function readRawStr(): string {
     const len = readInt()
     const bytes = readBytes(len)
     return Array.from(bytes, (b) => String.fromCharCode(b)).join('')
   }
 
-  // ── Marshal value reader ───────────────────────────────────────────────────
-
   function readValue(): MarshalValue {
     const tag = readByte()
-
     switch (tag) {
-      // Scalars
       case 0x30: return null
       case 0x54: return true
       case 0x46: return false
 
-      // Fixnum
       case 0x69: return readInt()
 
-      // Bignum (sign + word_count + words) — value not needed, register in table
       case 0x6c: {
-        const objIdx = objTable.length
+        const idx = objTable.length
         objTable.push(0)
-        readByte() // sign ('+' or '-')
+        readByte() // sign
         const words = readInt()
         for (let i = 0; i < words; i++) { readByte(); readByte() }
-        objTable[objIdx] = 0
+        objTable[idx] = 0
         return 0
       }
 
-      // Float stored as string representation
       case 0x66: {
         const s = readRawStr()
         const v = parseFloat(s)
@@ -152,14 +132,12 @@ export function parseRxdata(buffer: ArrayBuffer): ParsedSaveData {
         return v
       }
 
-      // String
       case 0x22: {
         const s = readRawStr()
         objTable.push(s)
         return s
       }
 
-      // New symbol (intern into symbol table)
       case 0x3a: {
         const len = readInt()
         const bytes = readBytes(len)
@@ -168,7 +146,6 @@ export function parseRxdata(buffer: ArrayBuffer): ParsedSaveData {
         return sym
       }
 
-      // Symbol back-reference
       case 0x3b: {
         const idx = readInt()
         const sym = symTable[idx]
@@ -176,28 +153,25 @@ export function parseRxdata(buffer: ArrayBuffer): ParsedSaveData {
         return sym
       }
 
-      // Object back-reference
       case 0x40: {
         const idx = readInt()
         return objTable[idx] ?? null
       }
 
-      // Array
       case 0x5b: {
         const count = readInt()
         const arr: MarshalValue[] = []
-        const objIdx = objTable.length
+        const idx = objTable.length
         objTable.push(arr)
         for (let i = 0; i < count; i++) arr.push(readValue())
         return arr
       }
 
-      // Object instance (o ClassName ivars…)
       case 0x6f: {
         const classNameRaw = readValue()
         const className = typeof classNameRaw === 'string' ? classNameRaw : String(classNameRaw)
         const obj: MarshalObject = { className, ivars: {} }
-        const objIdx = objTable.length
+        const idx = objTable.length
         objTable.push(obj)
         const count = readInt()
         for (let i = 0; i < count; i++) {
@@ -208,7 +182,6 @@ export function parseRxdata(buffer: ArrayBuffer): ParsedSaveData {
         return obj
       }
 
-      // User-defined (some PE classes use _dump/_load)
       case 0x75: {
         readValue() // class name symbol
         const data = readRawStr()
@@ -217,11 +190,9 @@ export function parseRxdata(buffer: ArrayBuffer): ParsedSaveData {
         return v
       }
 
-      // Hash
       case 0x7b: {
         const count = readInt()
         const hash: Record<string, MarshalValue> = {}
-        const objIdx = objTable.length
         objTable.push(hash as unknown as MarshalValue)
         for (let i = 0; i < count; i++) {
           const k = readValue()
@@ -230,7 +201,6 @@ export function parseRxdata(buffer: ArrayBuffer): ParsedSaveData {
         return hash as unknown as MarshalValue
       }
 
-      // Hash with default value
       case 0x7c: {
         const count = readInt()
         const hash: Record<string, MarshalValue> = {}
@@ -239,7 +209,7 @@ export function parseRxdata(buffer: ArrayBuffer): ParsedSaveData {
           const k = readValue()
           hash[String(k)] = readValue()
         }
-        readValue() // default value — ignore
+        readValue() // default value
         return hash as unknown as MarshalValue
       }
 
@@ -250,66 +220,136 @@ export function parseRxdata(buffer: ArrayBuffer): ParsedSaveData {
     }
   }
 
-  // ── Entry point ────────────────────────────────────────────────────────────
+  return {
+    readValue,
+    getPos: () => pos,
+    getObjTable: () => objTable,
+  }
+}
+
+// ─── Data extraction helpers ──────────────────────────────────────────────────
+
+function toPokemon(entry: MarshalValue): ParsedPokemon | null {
+  if (!isMarshalObject(entry)) return null
+  const speciesRaw = entry.ivars['@species']
+  const nameRaw = entry.ivars['@name']
+  if (typeof speciesRaw !== 'number' || speciesRaw <= 0) return null
+  const rawNick = typeof nameRaw === 'string' ? nameRaw : ''
+  const nickname = rawNick.replace(/^[><]/, '').toUpperCase()
+  return { speciesId: String(speciesRaw), nickname }
+}
+
+function extractBox1(storage: MarshalObject): ParsedPokemon[] {
+  const boxes = storage.ivars['@boxes']
+  if (!Array.isArray(boxes) || boxes.length === 0) return []
+
+  const firstBox = boxes[0]
+
+  // Box can be a PokemonBox object (with @pokemon ivar) or a bare array
+  let slots: MarshalValue[]
+  if (Array.isArray(firstBox)) {
+    slots = firstBox
+  } else if (isMarshalObject(firstBox)) {
+    const pkmn = firstBox.ivars['@pokemon']
+    slots = Array.isArray(pkmn) ? pkmn : []
+  } else {
+    return []
+  }
+
+  return slots.flatMap((slot) => {
+    const p = toPokemon(slot)
+    return p ? [p] : []
+  })
+}
+
+// ─── Main entry point ─────────────────────────────────────────────────────────
+
+export function parseRxdata(buffer: ArrayBuffer): ParsedSaveData {
+  const u8 = new Uint8Array(buffer)
 
   if (u8.length < 2 || u8[0] !== 0x04 || u8[1] !== 0x08) {
     throw new RxdataParseError(
       'El archivo no parece ser un guardado válido (cabecera Marshal no encontrada).'
     )
   }
-  pos = 2
 
-  const root = readValue()
+  let pos = 2
+  let foundTrainer: MarshalObject | null = null
+  let foundStorage: MarshalObject | null = null
 
-  if (!isMarshalObject(root) || root.className !== 'PokeBattle_Trainer') {
+  // Search a parsed stream's object table for trainer and storage objects.
+  // We look in objTable too because storage can be nested inside the trainer stream.
+  function scanStream(root: MarshalValue, objTable: MarshalValue[]) {
+    const candidates = [root, ...objTable]
+    for (const obj of candidates) {
+      if (!isMarshalObject(obj)) continue
+      if (!foundTrainer && obj.className === 'PokeBattle_Trainer') foundTrainer = obj
+      if (!foundStorage && isStorageClass(obj.className)) foundStorage = obj
+    }
+  }
+
+  // Iterate over all concatenated Marshal streams until we have what we need
+  let streamCount = 0
+  while (pos < u8.length && (!foundTrainer || !foundStorage)) {
+    // Every stream (after the first) starts with a fresh 04 08 header
+    if (streamCount > 0) {
+      if (pos + 1 >= u8.length || u8[pos] !== 0x04 || u8[pos + 1] !== 0x08) break
+      pos += 2
+    }
+
+    const reader = makeStreamReader(u8, pos)
+    try {
+      const root = reader.readValue()
+      pos = reader.getPos()
+      scanStream(root, reader.getObjTable())
+    } catch {
+      break // corrupt / unknown stream — stop gracefully
+    }
+
+    streamCount++
+    if (streamCount > 50) break // safety cap
+  }
+
+  // ── Extract party ──────────────────────────────────────────────────────────
+
+  if (!foundTrainer) {
     throw new RxdataParseError(
-      `Se esperaba PokeBattle_Trainer, se encontró: ${isMarshalObject(root) ? root.className : typeof root}`
+      'No se encontró PokeBattle_Trainer en el archivo. ¿Es este el guardado correcto?'
     )
   }
 
-  // ── Extract @party ─────────────────────────────────────────────────────────
-
-  const partyRaw = root.ivars['@party']
+  const trainer = foundTrainer as MarshalObject
+  const partyRaw = trainer.ivars['@party']
   if (!Array.isArray(partyRaw)) {
     throw new RxdataParseError('@party no encontrado o no es un array.')
   }
 
-  const party: ParsedPokemon[] = []
-  for (const entry of partyRaw) {
-    if (!isMarshalObject(entry)) continue
-    const speciesRaw = entry.ivars['@species']
-    const nameRaw = entry.ivars['@name']
-    if (typeof speciesRaw !== 'number' || speciesRaw <= 0) continue
-
-    // Some games prepend a gender byte ('>','<') — strip it, then uppercase for consistency
-    const rawNick = typeof nameRaw === 'string' ? nameRaw : ''
-    const nickname = rawNick.replace(/^[><]/, '').toUpperCase()
-
-    party.push({ speciesId: String(speciesRaw), nickname })
-  }
+  const party: ParsedPokemon[] = partyRaw.flatMap((e) => {
+    const p = toPokemon(e)
+    return p ? [p] : []
+  })
 
   if (party.length === 0) {
     throw new RxdataParseError('No se encontraron Pokémon en el equipo. ¿Es este el archivo correcto?')
   }
 
-  // ── Extract @badges count ──────────────────────────────────────────────────
+  // ── Extract badges ─────────────────────────────────────────────────────────
 
   let badgeCount = 0
-  const badgesRaw = root.ivars['@badges']
+  const badgesRaw = trainer.ivars['@badges']
   if (Array.isArray(badgesRaw)) {
     badgeCount = badgesRaw.filter((b) => b === true).length
   }
 
-  return { party, box1: [], badgeCount }
+  // ── Extract Box 1 ──────────────────────────────────────────────────────────
+
+  const box1 = foundStorage ? extractBox1(foundStorage) : []
+
+  return { party, box1, badgeCount }
 }
 
-// ─── Species name normalizer (for symbol-style IDs if ever needed) ─────────────
+// ─── Species name normalizer (symbol-style IDs, if ever needed) ──────────────
 
-/**
- * Converts a Pokémon Essentials species token to a PokéAPI slug.
- * Only needed for games that store species as symbols instead of integers.
- * Examples: "CHARIZARD" → "charizard", "MR_MIME" → "mr-mime"
- */
 export function normalizeSpeciesName(raw: string): string {
   return raw.trim().toLowerCase().replace(/_/g, '-')
 }

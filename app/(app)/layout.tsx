@@ -1,5 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { Navbar } from '@/components/layout/navbar'
+import { NotificationEnvelope } from '@/components/notification-envelope'
+import { getUnreadNotifications } from '@/lib/actions/notifications'
 import type { Profile } from '@/lib/types'
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
@@ -9,6 +11,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   } = await supabase.auth.getUser()
 
   let profile: Pick<Profile, 'id' | 'username' | 'role' | 'avatar_url'> | null = null
+  const unreadNotifications = user ? await getUnreadNotifications() : []
 
   if (user) {
     const { data } = await supabase
@@ -49,6 +52,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       <main className="container mx-auto px-4 py-8 max-w-6xl">
         {children}
       </main>
+
+      {unreadNotifications.length > 0 && (
+        <NotificationEnvelope notifications={unreadNotifications} />
+      )}
     </div>
   )
 }

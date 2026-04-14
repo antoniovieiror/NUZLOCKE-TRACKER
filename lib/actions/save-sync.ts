@@ -96,18 +96,25 @@ export async function syncSaveFile(profileId: string, formData: FormData): Promi
     }
   }
 
-  const partyRaw = parsed.party.slice(0, 6)
-  const teamEntries = await Promise.all(
-    partyRaw.map(async (p) => ({
-      species: await resolveSpecies(p.speciesId),
-      nickname: p.nickname,
-    }))
-  )
+  const [teamEntries, boxEntries] = await Promise.all([
+    Promise.all(
+      parsed.party.slice(0, 6).map(async (p) => ({
+        species: await resolveSpecies(p.speciesId),
+        nickname: p.nickname,
+      }))
+    ),
+    Promise.all(
+      parsed.box1.map(async (p) => ({
+        species: await resolveSpecies(p.speciesId),
+        nickname: p.nickname,
+      }))
+    ),
+  ])
 
   // ── Persist ──────────────────────────────────────────────────────────────────
 
   const team = teamEntries
-  const box: typeof teamEntries = [] // box1 is empty for this save format
+  const box = boxEntries
 
   const { error: dbError } = await supabase!
     .from('profiles')
@@ -125,5 +132,5 @@ export async function syncSaveFile(profileId: string, formData: FormData): Promi
   }
 
   revalidatePath(`/profile/${profileId}`)
-  return { success: true, party: team.length, box1: box.length }
+  return { success: true, party: team.length, box1: boxEntries.length }
 }
