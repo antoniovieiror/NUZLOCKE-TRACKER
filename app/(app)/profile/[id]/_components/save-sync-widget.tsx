@@ -2,19 +2,23 @@
 
 import { useState, useEffect, useTransition, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { RefreshCw, Link2, Link2Off, Upload, CheckCircle, AlertCircle, Clock, Loader2 } from 'lucide-react'
+import {
+  RefreshCw,
+  Link2,
+  Link2Off,
+  Upload,
+  CheckCircle,
+  AlertCircle,
+  Clock,
+  Loader2,
+} from 'lucide-react'
 import { toast } from 'sonner'
 
 import { syncSaveFile } from '@/lib/actions/save-sync'
 import { loadFileHandle, saveFileHandle, clearFileHandle } from '@/lib/idb-file-handle'
 import type { SaveSyncStatus } from '@/lib/types'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
-
-// ─── File System Access API types ────────────────────────────────────────────
-// These are not in the default TS DOM lib for all targets.
 
 interface FSAFileHandle {
   getFile(): Promise<File>
@@ -31,8 +35,6 @@ declare global {
   }
 }
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
 function formatRelativeTime(isoString: string): string {
   const diff = Date.now() - new Date(isoString).getTime()
   const minutes = Math.floor(diff / 60000)
@@ -45,7 +47,23 @@ function formatRelativeTime(isoString: string): string {
   return `hace ${days} días`
 }
 
-// ─── Component ────────────────────────────────────────────────────────────────
+function StatusLight({ color }: { color: 'green' | 'red' | 'amber' }) {
+  const map = {
+    green: { bg: '#4ade80', glow: 'rgba(74, 222, 128, 0.55)' },
+    red: { bg: '#f87171', glow: 'rgba(248, 113, 113, 0.55)' },
+    amber: { bg: '#fbbf24', glow: 'rgba(251, 191, 36, 0.55)' },
+  }[color]
+
+  return (
+    <span
+      className="inline-block h-3 w-3 rounded-full"
+      style={{
+        background: map.bg,
+        boxShadow: `0 0 12px ${map.glow}`,
+      }}
+    />
+  )
+}
 
 export function SaveSyncWidget({
   profileId,
@@ -67,7 +85,6 @@ export function SaveSyncWidget({
   const [localError, setLocalError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
 
-  // On mount: detect FSA API support + load stored handle from IndexedDB
   useEffect(() => {
     const supported = typeof window.showOpenFilePicker === 'function'
     setFsaSupported(supported)
@@ -82,8 +99,6 @@ export function SaveSyncWidget({
     }
   }, [profileId])
 
-  // ── Core sync logic ──────────────────────────────────────────────────────────
-
   function doSync(file: File) {
     setLocalError(null)
     const formData = new FormData()
@@ -95,67 +110,67 @@ export function SaveSyncWidget({
         setLocalError(result.error)
         toast.error('Error al sincronizar', { description: result.error })
       } else {
-        toast.success(
-          `Guardado sincronizado`,
-          { description: `${result.party} en equipo · ${result.box1} en caja` }
-        )
+        toast.success('Guardado sincronizado', {
+          description: `${result.party} en equipo · ${result.box1} en caja`,
+        })
         router.refresh()
       }
     })
   }
 
-  // ── FSA: link file (first time) and sync immediately ────────────────────────
-
   async function handleLinkAndSync() {
     if (!window.showOpenFilePicker) return
+
     try {
       const [rawHandle] = await window.showOpenFilePicker({
-        types: [{ description: 'Archivo de guardado RPG Maker', accept: { 'application/octet-stream': ['.rxdata'] } }],
+        types: [
+          {
+            description: 'Archivo de guardado RPG Maker',
+            accept: { 'application/octet-stream': ['.rxdata'] },
+          },
+        ],
         multiple: false,
       })
+
       await saveFileHandle(profileId, rawHandle)
       const handle = rawHandle as unknown as FSAFileHandle
       setStoredHandle(handle)
       const file = await handle.getFile()
       doSync(file)
     } catch (err) {
-      if ((err as DOMException)?.name === 'AbortError') return // user cancelled picker
+      if ((err as DOMException)?.name === 'AbortError') return
       toast.error('No se pudo acceder al archivo')
     }
   }
 
-  // ── FSA: re-sync using stored handle ────────────────────────────────────────
-
   async function handleResync() {
     if (!storedHandle) return
+
     try {
       let perm = await storedHandle.queryPermission({ mode: 'read' })
       if (perm !== 'granted') {
         perm = await storedHandle.requestPermission({ mode: 'read' })
       }
+
       if (perm !== 'granted') {
         toast.error('Permiso de lectura denegado')
         return
       }
+
       const file = await storedHandle.getFile()
       doSync(file)
     } catch {
-      // Handle may be stale (file moved or deleted)
       setStoredHandle(null)
       await clearFileHandle(profileId)
       toast.error('No se encontró el archivo. Vincúlalo de nuevo.')
     }
   }
 
-  // ── FSA: unlink stored handle ────────────────────────────────────────────────
-
   async function handleUnlink() {
     await clearFileHandle(profileId)
     setStoredHandle(null)
     setLocalError(null)
   }
-
-  // ── Fallback: regular file input ────────────────────────────────────────────
 
   function handleFileInputChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -164,70 +179,138 @@ export function SaveSyncWidget({
     e.target.value = ''
   }
 
-  // ─── Derived display state ───────────────────────────────────────────────────
-
   const isSyncing = isPending
   const displayError = localError ?? (saveSyncStatus === 'failed' ? saveParseError : null)
 
-  // ─── Render ──────────────────────────────────────────────────────────────────
+  const statusColor =
+    saveSyncStatus === 'synced'
+      ? 'green'
+      : saveSyncStatus === 'failed'
+      ? 'red'
+      : 'amber'
+
+  const statusLabel =
+    saveSyncStatus === 'synced'
+      ? 'SINCRONIZADO'
+      : saveSyncStatus === 'failed'
+      ? 'ERROR'
+      : 'SIN ENLACE'
 
   return (
-    <Card className="border-border/50 overflow-hidden">
-      {/* Top accent line — matches profile card style */}
-      <div className="h-0.5 w-full bg-gradient-to-r from-blue-500/40 via-violet-500/30 to-transparent" />
+    <div
+      className="relative overflow-hidden rounded-[22px]"
+      style={{
+        background: 'linear-gradient(180deg, rgba(11,15,26,0.97), rgba(7,10,18,0.98))',
+        border: '1px solid rgba(255,255,255,0.08)',
+        boxShadow: [
+          'inset 0 1px 0 rgba(255,255,255,0.07)',
+          'inset 0 -1px 0 rgba(0,0,0,0.6)',
+          '0 12px 26px rgba(0,0,0,0.36)',
+          '0 0 0 1px rgba(0,200,232,0.04)',
+        ].join(', '),
+      }}
+    >
+      <div className="border-b border-white/8 px-4 py-3">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <div className="flex items-center gap-2">
+              <span
+                className="inline-block h-1.5 w-1.5 rounded-full"
+                style={{
+                  background: '#00c8e8',
+                  boxShadow: '0 0 10px rgba(0,200,232,0.65)',
+                }}
+              />
+              <span className="font-heading text-[11px] font-bold uppercase tracking-[0.18em] text-cyan-200/90">
+                Save Sync
+              </span>
+            </div>
+            <p className="mt-1 font-heading text-[11px] text-white/42">
+              Sincronización de guardado
+            </p>
+          </div>
 
-      <CardHeader className="pb-3 border-b border-border/40 flex flex-row items-center justify-between gap-2">
-        <CardTitle className="text-sm font-bold flex items-center gap-2">
-          Sincronización de guardado
-        </CardTitle>
-
-        <div className="flex items-center gap-2">
-          {saveSyncStatus === 'synced' && (
-            <Badge className="gap-1 text-xs bg-green-500/15 text-green-400 border-green-500/20">
-              <CheckCircle className="h-3 w-3" />
-              Sincronizado
-            </Badge>
-          )}
-          {saveSyncStatus === 'failed' && (
-            <Badge className="gap-1 text-xs bg-red-500/15 text-red-400 border-red-500/20">
-              <AlertCircle className="h-3 w-3" />
-              Error
-            </Badge>
-          )}
+          <div className="flex items-center gap-2 rounded-full border border-white/8 bg-white/[0.04] px-3 py-1.5">
+            <StatusLight color={statusColor} />
+            <span className="font-heading text-[11px] font-bold uppercase tracking-[0.14em] text-white/82">
+              {statusLabel}
+            </span>
+          </div>
         </div>
-      </CardHeader>
+      </div>
 
-      <CardContent className="pt-4 space-y-4">
+      <div className="space-y-4 p-4">
+        <div
+          className="rounded-2xl border px-4 py-3"
+          style={{
+            background:
+              saveSyncStatus === 'synced'
+                ? 'linear-gradient(180deg, rgba(34,197,94,0.10), rgba(34,197,94,0.04))'
+                : saveSyncStatus === 'failed'
+                ? 'linear-gradient(180deg, rgba(239,68,68,0.10), rgba(239,68,68,0.04))'
+                : 'linear-gradient(180deg, rgba(0,200,232,0.08), rgba(0,200,232,0.03))',
+            borderColor:
+              saveSyncStatus === 'synced'
+                ? 'rgba(34,197,94,0.18)'
+                : saveSyncStatus === 'failed'
+                ? 'rgba(239,68,68,0.18)'
+                : 'rgba(0,200,232,0.15)',
+          }}
+        >
+          <div className="mb-1 flex items-center gap-2">
+            {saveSyncStatus === 'synced' ? (
+              <CheckCircle className="h-4 w-4 text-green-400" />
+            ) : saveSyncStatus === 'failed' ? (
+              <AlertCircle className="h-4 w-4 text-red-400" />
+            ) : (
+              <Clock className="h-4 w-4 text-cyan-300" />
+            )}
 
-        {/* Last sync info */}
-        {saveSyncedAt && (
-          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            <Clock className="h-3.5 w-3.5 shrink-0" />
-            <span>Última sincronización: {formatRelativeTime(saveSyncedAt)}</span>
+            <span
+              className={cn(
+                'font-heading text-lg font-bold',
+                saveSyncStatus === 'synced'
+                  ? 'text-green-400'
+                  : saveSyncStatus === 'failed'
+                  ? 'text-red-400'
+                  : 'text-cyan-200',
+              )}
+            >
+              {statusLabel}
+            </span>
           </div>
-        )}
 
-        {/* Error message */}
+          <div className="text-sm text-white/55">
+            {saveSyncedAt ? (
+              <>
+                Última sincronización:{' '}
+                <span className="font-semibold text-cyan-100">
+                  {formatRelativeTime(saveSyncedAt)}
+                </span>
+              </>
+            ) : (
+              'Todavía no se ha sincronizado ningún archivo.'
+            )}
+          </div>
+        </div>
+
         {displayError && (
-          <div className="rounded-lg border border-red-500/20 bg-red-500/5 px-3 py-2">
-            <p className="text-xs text-red-400 break-words">{displayError}</p>
+          <div className="rounded-2xl border border-red-400/16 bg-red-500/6 px-4 py-3">
+            <p className="text-sm break-words text-red-300">{displayError}</p>
           </div>
         )}
 
-        {/* Action area */}
         {checking ? (
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            <span>Comprobando…</span>
+          <div className="flex items-center gap-2 text-sm text-white/45">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            Comprobando acceso al archivo…
           </div>
         ) : fsaSupported ? (
-          /* ── FSA path ── */
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap gap-2">
             {storedHandle ? (
               <>
                 <Button
                   size="sm"
-                  variant="default"
                   onClick={handleResync}
                   disabled={isSyncing}
                   className="gap-1.5"
@@ -242,10 +325,10 @@ export function SaveSyncWidget({
 
                 <Button
                   size="sm"
-                  variant="ghost"
+                  variant="outline"
                   onClick={handleLinkAndSync}
                   disabled={isSyncing}
-                  className="gap-1.5 text-muted-foreground"
+                  className="gap-1.5 border-white/10 bg-white/5 text-white/80 hover:bg-white/10"
                 >
                   <Link2 className="h-3.5 w-3.5" />
                   Cambiar archivo
@@ -253,10 +336,10 @@ export function SaveSyncWidget({
 
                 <Button
                   size="sm"
-                  variant="ghost"
+                  variant="outline"
                   onClick={handleUnlink}
                   disabled={isSyncing}
-                  className="gap-1.5 text-muted-foreground hover:text-destructive"
+                  className="gap-1.5 border-white/10 bg-white/5 text-white/70 hover:bg-red-500/10 hover:text-red-300"
                 >
                   <Link2Off className="h-3.5 w-3.5" />
                   Desvincular
@@ -269,24 +352,22 @@ export function SaveSyncWidget({
                   variant="outline"
                   onClick={handleLinkAndSync}
                   disabled={isSyncing}
-                  className="gap-1.5"
+                  className="gap-1.5 border-white/10 bg-white/5 text-white/84 hover:bg-white/10"
                 >
                   {isSyncing ? (
                     <Loader2 className="h-3.5 w-3.5 animate-spin" />
                   ) : (
                     <Link2 className="h-3.5 w-3.5" />
                   )}
-                  {isSyncing ? 'Sincronizando…' : 'Vincular archivo de guardado'}
+                  {isSyncing ? 'Sincronizando…' : 'Vincular archivo .rxdata'}
                 </Button>
-                <p className="text-xs text-muted-foreground/70 w-full">
-                  Selecciona tu <span className="font-mono text-[11px]">.rxdata</span> una vez y
-                  podrás sincronizar con un solo clic a partir de entonces.
+                <p className="w-full text-sm text-white/45">
+                  El navegador recordará el archivo para futuras sincronizaciones.
                 </p>
               </>
             )}
           </div>
         ) : (
-          /* ── Fallback: regular file input ── */
           <div className="space-y-2">
             <input
               ref={fileInputRef}
@@ -301,7 +382,7 @@ export function SaveSyncWidget({
               variant="outline"
               onClick={() => fileInputRef.current?.click()}
               disabled={isSyncing}
-              className="gap-1.5"
+              className="gap-1.5 border-white/10 bg-white/5 text-white/84 hover:bg-white/10"
             >
               {isSyncing ? (
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -310,13 +391,12 @@ export function SaveSyncWidget({
               )}
               {isSyncing ? 'Sincronizando…' : 'Subir archivo de guardado'}
             </Button>
-            <p className={cn('text-xs text-muted-foreground/70')}>
-              Tu navegador no soporta acceso persistente a archivos. Deberás seleccionar el archivo
-              cada vez que quieras sincronizar.
+            <p className={cn('text-sm text-white/45')}>
+              Tu navegador no soporta acceso persistente. Tendrás que seleccionar el archivo cada vez.
             </p>
           </div>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   )
 }

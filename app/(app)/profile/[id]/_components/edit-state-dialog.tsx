@@ -73,7 +73,6 @@ export function EditStateDialog({ profileId, initialValues }: Props) {
 
   function onSubmit(values: FormValues) {
     startTransition(async () => {
-      // mvp is managed separately via the crown toggle on team cards
       const result = await updateNuzlockeState(profileId, values)
       if (result.error) {
         toast.error('Error al guardar', { description: String(result.error) })
@@ -89,7 +88,7 @@ export function EditStateDialog({ profileId, initialValues }: Props) {
       <Button
         variant="outline"
         size="sm"
-        className="gap-1.5"
+        className="h-8 gap-1.5 border-white/10 bg-black/25 px-2.5 text-[11px] uppercase tracking-[0.12em] text-cyan-100 hover:bg-white/10"
         onClick={() => setOpen(true)}
       >
         <Pencil className="h-3.5 w-3.5" />
@@ -97,17 +96,15 @@ export function EditStateDialog({ profileId, initialValues }: Props) {
       </Button>
 
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-lg border-white/10 bg-[#0b1020] text-slate-100">
           <DialogHeader>
-            <DialogTitle>Editar estado Nuzlocke</DialogTitle>
-            <DialogDescription>
-              Actualiza medallas, muertes, wipes y notas de tu partida.
-              El MVP se selecciona directamente desde el equipo.
+            <DialogTitle className="font-heading text-xl">Editar estado Nuzlocke</DialogTitle>
+            <DialogDescription className="text-white/55">
+              Actualiza medallas, muertes, wipes y notas. El MVP se sigue seleccionando desde el equipo.
             </DialogDescription>
           </DialogHeader>
 
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 py-2">
-            {/* Badges / Deaths / Wipes */}
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-5 py-2">
             <div className="grid grid-cols-3 gap-3">
               <div className="space-y-2">
                 <Label htmlFor="badges">Medallas</Label>
@@ -118,9 +115,10 @@ export function EditStateDialog({ profileId, initialValues }: Props) {
                   max={12}
                   {...register('badges', { valueAsNumber: true })}
                   aria-invalid={!!errors.badges}
+                  className="border-white/10 bg-black/20"
                 />
                 {errors.badges && (
-                  <p className="text-xs text-destructive">{errors.badges.message}</p>
+                  <p className="text-xs text-red-400">{errors.badges.message}</p>
                 )}
               </div>
 
@@ -132,9 +130,10 @@ export function EditStateDialog({ profileId, initialValues }: Props) {
                   min={0}
                   {...register('deaths', { valueAsNumber: true })}
                   aria-invalid={!!errors.deaths}
+                  className="border-white/10 bg-black/20"
                 />
                 {errors.deaths && (
-                  <p className="text-xs text-destructive">{errors.deaths.message}</p>
+                  <p className="text-xs text-red-400">{errors.deaths.message}</p>
                 )}
               </div>
 
@@ -146,26 +145,26 @@ export function EditStateDialog({ profileId, initialValues }: Props) {
                   min={0}
                   {...register('wipes', { valueAsNumber: true })}
                   aria-invalid={!!errors.wipes}
+                  className="border-white/10 bg-black/20"
                 />
                 {errors.wipes && (
-                  <p className="text-xs text-destructive">{errors.wipes.message}</p>
+                  <p className="text-xs text-red-400">{errors.wipes.message}</p>
                 )}
               </div>
             </div>
 
-            {/* Notes */}
             <div className="space-y-2">
-              <Label htmlFor="notes">Notas de la partida</Label>
+              <Label htmlFor="notes">Notas</Label>
               <Textarea
                 id="notes"
-                placeholder="Pensamientos sobre tu partida, momentos memorables…"
-                className="resize-none"
-                rows={4}
+                rows={5}
+                placeholder="Momentos memorables, reglas caseras, observaciones…"
+                className="resize-none border-white/10 bg-black/20"
                 {...register('notes')}
                 aria-invalid={!!errors.notes}
               />
               {errors.notes && (
-                <p className="text-xs text-destructive">{errors.notes.message}</p>
+                <p className="text-xs text-red-400">{errors.notes.message}</p>
               )}
             </div>
 
@@ -175,6 +174,7 @@ export function EditStateDialog({ profileId, initialValues }: Props) {
                 variant="ghost"
                 onClick={() => onOpenChange(false)}
                 disabled={isPending}
+                className="text-white/70 hover:text-white"
               >
                 Cancelar
               </Button>

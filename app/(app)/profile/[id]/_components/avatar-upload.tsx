@@ -78,7 +78,7 @@ export function AvatarUpload({ profileId, avatarUrl, username, canEdit }: Avatar
 
   return (
     <div className="relative shrink-0 group/avatar">
-      <Avatar className="h-20 w-20 ring-4 ring-white/80 dark:ring-white/10 shadow-lg">
+      <Avatar className="h-full w-full ring-2 ring-white/60 dark:ring-white/15 shadow-lg">
         <AvatarImage src={displayUrl} alt={username} />
         <AvatarFallback className="text-2xl font-bold bg-gradient-to-br from-violet-100 to-sky-100 dark:from-indigo-900 dark:to-blue-900 text-violet-700 dark:text-violet-300">
           {username.slice(0, 2).toUpperCase()}

@@ -10,25 +10,87 @@ import type { PokemonEntry } from '@/lib/types'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
+import { ActiveTeamDisplay } from './active-team-display'
 
-// ─── PokéAPI cache ─────────────────────────────────────────────────────────────
+function HubCard({
+  title,
+  subtitle,
+  action,
+  children,
+  className = '',
+}: {
+  title: string
+  subtitle?: string
+  action?: React.ReactNode
+  children: React.ReactNode
+  className?: string
+}) {
+  return (
+    <div
+      className={`relative overflow-hidden rounded-[22px] ${className}`}
+      style={{
+        background: 'linear-gradient(180deg, rgba(12,16,28,0.97), rgba(7,10,18,0.98))',
+        border: '1px solid rgba(255,255,255,0.08)',
+        boxShadow: [
+          'inset 0 1px 0 rgba(255,255,255,0.07)',
+          'inset 0 -1px 0 rgba(0,0,0,0.6)',
+          '0 10px 24px rgba(0,0,0,0.35)',
+          '0 0 0 1px rgba(0,200,232,0.05)',
+        ].join(', '),
+      }}
+    >
+      <div
+        className="flex items-center justify-between gap-3 border-b border-white/8 px-4 py-3"
+        style={{
+          background: 'linear-gradient(90deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01))',
+        }}
+      >
+        <div>
+          <div className="flex items-center gap-2">
+            <span
+              className="inline-block h-1.5 w-1.5 rounded-full"
+              style={{
+                background: '#00c8e8',
+                boxShadow: '0 0 10px rgba(0,200,232,0.65)',
+              }}
+            />
+            <span className="font-heading text-[11px] font-bold uppercase tracking-[0.18em] text-cyan-200/90">
+              {title}
+            </span>
+          </div>
+          {subtitle && (
+            <p className="mt-1 font-heading text-[11px] text-white/42">{subtitle}</p>
+          )}
+        </div>
+        {action}
+      </div>
+      <div className="p-4">{children}</div>
+    </div>
+  )
+}
 
-interface PokeListItem { name: string; url: string }
+interface PokeListItem {
+  name: string
+  url: string
+}
+
 let cachedPokemonList: PokeListItem[] | null = null
 let listFetchPromise: Promise<PokeListItem[]> | null = null
 
 async function getPokemonList(): Promise<PokeListItem[]> {
   if (cachedPokemonList) return cachedPokemonList
   if (listFetchPromise) return listFetchPromise
+
   listFetchPromise = fetch('https://pokeapi.co/api/v2/pokemon?limit=2000')
     .then((r) => r.json())
-    .then((data) => { cachedPokemonList = data.results; return cachedPokemonList! })
+    .then((data) => {
+      cachedPokemonList = data.results
+      return cachedPokemonList!
+    })
+
   return listFetchPromise
 }
-
-// ─── Nickname inline editor ────────────────────────────────────────────────────
 
 function NicknameEditor({
   nickname,
@@ -43,9 +105,12 @@ function NicknameEditor({
   const [value, setValue] = useState(nickname)
   const inputRef = useRef<HTMLInputElement>(null)
 
-  useEffect(() => { setValue(nickname) }, [nickname])
+  useEffect(() => {
+    setValue(nickname)
+  }, [nickname])
 
   function startEditing() {
+    if (!canEdit) return
     setValue(nickname)
     setEditing(true)
     setTimeout(() => inputRef.current?.focus(), 0)
@@ -56,14 +121,14 @@ function NicknameEditor({
     setEditing(false)
   }
 
-  function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
-    if (e.key === 'Enter') save()
-    if (e.key === 'Escape') { setValue(nickname); setEditing(false) }
+  function cancel() {
+    setValue(nickname)
+    setEditing(false)
   }
 
   if (!canEdit) {
     return nickname ? (
-      <span className="text-[10px] font-semibold text-center leading-none truncate max-w-[72px] sm:max-w-[80px]">
+      <span className="max-w-[84px] truncate text-center text-[10px] font-semibold leading-none text-white/86">
         {nickname}
       </span>
     ) : null
@@ -71,42 +136,53 @@ function NicknameEditor({
 
   if (editing) {
     return (
-      <div className="flex items-center gap-0.5">
+      <div className="flex items-center gap-1">
         <input
           ref={inputRef}
           value={value}
           onChange={(e) => setValue(e.target.value)}
-          onKeyDown={handleKeyDown}
           onBlur={save}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') save()
+            if (e.key === 'Escape') cancel()
+          }}
           maxLength={16}
-          placeholder="Apodo…"
-          className="text-[10px] font-semibold w-14 sm:w-16 bg-transparent border-b border-primary focus:outline-none text-center pb-px"
+          placeholder="Apodo"
+          className="w-16 border-b border-cyan-300/35 bg-transparent pb-px text-center text-[10px] font-semibold text-white focus:outline-none"
         />
-        <button onMouseDown={(e) => { e.preventDefault(); save() }} aria-label="Confirmar">
-          <Check className="h-2.5 w-2.5 text-green-500" />
+        <button
+          type="button"
+          onMouseDown={(e) => {
+            e.preventDefault()
+            save()
+          }}
+          aria-label="Guardar apodo"
+        >
+          <Check className="h-3 w-3 text-green-400" />
         </button>
       </div>
     )
   }
 
   return (
-    <div
-      className="flex items-center gap-0.5 cursor-pointer group/nick min-h-[14px]"
+    <button
+      type="button"
+      className="group/nick inline-flex min-h-[16px] items-center gap-1"
       onClick={startEditing}
       title="Editar apodo"
     >
-      <span className={cn(
-        'text-[10px] font-semibold text-center leading-none truncate max-w-[72px] sm:max-w-[80px]',
-        nickname ? 'text-foreground' : 'text-muted-foreground/40 italic'
-      )}>
+      <span
+        className={cn(
+          'max-w-[84px] truncate text-center text-[10px] font-semibold leading-none',
+          nickname ? 'text-white/86' : 'italic text-white/32',
+        )}
+      >
         {nickname || 'Apodo'}
       </span>
-      <Pencil className="h-2.5 w-2.5 text-muted-foreground opacity-0 group-hover/nick:opacity-100 transition-opacity shrink-0" />
-    </div>
+      <Pencil className="h-2.5 w-2.5 shrink-0 text-white/28 opacity-0 transition-opacity group-hover/nick:opacity-100" />
+    </button>
   )
 }
-
-// ─── Individual Pokémon card ───────────────────────────────────────────────────
 
 interface PokemonCardProps {
   entry: PokemonEntry
@@ -116,7 +192,7 @@ interface PokemonCardProps {
   onRemove: () => void
   onNicknameChange: (nickname: string) => void
   onToggleMvp: () => void
-  isTeam: boolean // crown only on team cards
+  isTeam: boolean
   compact?: boolean
 }
 
@@ -135,103 +211,100 @@ function PokemonCard({
 
   useEffect(() => {
     let cancelled = false
+
     fetch(`https://pokeapi.co/api/v2/pokemon/${entry.species}`)
       .then((r) => r.json())
       .then((data) => {
-        if (!cancelled)
+        if (!cancelled) {
           setSprite(
             data.sprites?.other?.['official-artwork']?.front_default ??
-              data.sprites?.front_default ?? null
+              data.sprites?.front_default ??
+              null,
           )
+        }
       })
       .catch(() => {})
-    return () => { cancelled = true }
+
+    return () => {
+      cancelled = true
+    }
   }, [entry.species])
 
   return (
-    <div className="relative group/card flex flex-col items-center gap-0.5">
-      {/* Nickname */}
-      <NicknameEditor nickname={entry.nickname} canEdit={canEdit} onSave={onNicknameChange} />
+    <div
+      className={cn(
+        'relative flex flex-col items-center gap-1 rounded-xl border border-white/6 bg-white/[0.03] p-2',
+        compact ? 'min-h-[118px]' : 'min-h-[132px]',
+      )}
+    >
+      <div className="min-h-[16px]">
+        <NicknameEditor nickname={entry.nickname} canEdit={canEdit} onSave={onNicknameChange} />
+      </div>
 
-      {/* Sprite container */}
-      <div className={cn('relative', compact ? 'w-12 h-12 sm:w-14 sm:h-14' : 'w-16 h-16 sm:w-20 sm:h-20')}>
+      <div className={cn('relative', compact ? 'h-14 w-14' : 'h-16 w-16 sm:h-20 sm:w-20')}>
         {sprite ? (
           <img
             src={sprite}
             alt={entry.species}
-            width={80}
-            height={80}
             className={cn(
-              'object-contain w-full h-full drop-shadow-sm transition-all duration-200',
-              isMvp && 'drop-shadow-[0_0_8px_rgba(251,191,36,0.7)]'
+              'h-full w-full object-contain transition-all duration-200',
+              isMvp && 'drop-shadow-[0_0_10px_rgba(251,191,36,0.75)]',
             )}
           />
         ) : (
-          <Skeleton className="w-full h-full rounded-lg" />
+          <Skeleton className="h-full w-full rounded-lg" />
         )}
 
-        {/* Crown toggle — top-left, only on team cards in edit mode */}
         {isTeam && editMode && canEdit && (
           <button
+            type="button"
             onClick={onToggleMvp}
             aria-label={isMvp ? 'Quitar MVP' : 'Marcar como MVP'}
             title={isMvp ? 'Quitar MVP' : 'Marcar como MVP'}
             className={cn(
-              'absolute -top-2 -left-2 z-10 flex items-center justify-center w-5 h-5 rounded-full',
-              'shadow-sm transition-all duration-200',
+              'absolute -left-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full shadow-md transition-all',
               isMvp
-                ? 'bg-amber-400 dark:bg-amber-500 shadow-amber-300/60 dark:shadow-amber-700/60 scale-110'
-                : 'bg-muted/80 hover:bg-amber-100 dark:hover:bg-amber-900/50 text-muted-foreground hover:text-amber-600'
+                ? 'bg-amber-400 text-amber-950'
+                : 'bg-black/60 text-white/65 hover:bg-amber-400/20 hover:text-amber-300',
             )}
           >
-            <Crown className={cn('h-3 w-3 transition-colors', isMvp ? 'text-amber-900' : '')} />
+            <Crown className="h-3 w-3" />
           </button>
         )}
 
-        {/* MVP glow ring when not in edit mode */}
-        {isTeam && isMvp && !editMode && (
-          <span className="absolute -top-2 -right-2 text-xs select-none drop-shadow" aria-hidden>
-            👑
-          </span>
-        )}
-
-        {/* Remove button — top-right */}
         {editMode && (
           <button
+            type="button"
             onClick={onRemove}
-            className="absolute -top-1.5 -right-1.5 z-10 flex items-center justify-center w-5 h-5 rounded-full bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive/90 transition-colors"
             aria-label={`Eliminar ${entry.species}`}
+            className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-white shadow-md transition hover:bg-red-400"
           >
             <X className="h-3 w-3" />
           </button>
         )}
       </div>
 
-      {/* Species name */}
-      <span className={cn(
-        'text-muted-foreground capitalize text-center leading-tight truncate',
-        compact ? 'text-[10px] max-w-[56px]' : 'text-[11px] max-w-[80px]'
-      )}>
+      <div className="max-w-full truncate text-center text-[11px] capitalize leading-tight text-white/60">
         {entry.species.replace(/-/g, ' ')}
-      </span>
+      </div>
+
+      {isTeam && isMvp && !editMode && (
+        <div className="rounded-full border border-amber-300/25 bg-amber-400/10 px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.14em] text-amber-200">
+          MVP
+        </div>
+      )}
     </div>
   )
 }
-
-// ─── Empty slot ────────────────────────────────────────────────────────────────
 
 function EmptySlot() {
   return (
-    <div className="flex flex-col items-center gap-1">
-      <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl border-2 border-dashed border-border flex items-center justify-center">
-        <span className="text-muted-foreground/40 text-2xl select-none">?</span>
-      </div>
-      <span className="text-[11px] text-muted-foreground/40">—</span>
+    <div className="flex min-h-[132px] flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-white/10 bg-white/[0.02]">
+      <div className="text-2xl text-white/18">?</div>
+      <span className="text-[11px] text-white/28">Vacío</span>
     </div>
   )
 }
-
-// ─── Autocomplete search ───────────────────────────────────────────────────────
 
 function PokemonSearch({
   onAdd,
@@ -242,25 +315,48 @@ function PokemonSearch({
   disabled?: boolean
   disabledReason?: string
 }) {
-  const [query, setQuery] = useState('')
-  const [suggestions, setSuggestions] = useState<string[]>([])
-  const [loading, setLoading] = useState(false)
-  const [listReady, setListReady] = useState(!!cachedPokemonList)
   const inputRef = useRef<HTMLInputElement>(null)
+  const [listReady, setListReady] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [query, setQuery] = useState('')
+  const [allPokemon, setAllPokemon] = useState<PokeListItem[]>([])
+  const [suggestions, setSuggestions] = useState<string[]>([])
 
   useEffect(() => {
-    if (cachedPokemonList) { setListReady(true); return }
+    let mounted = true
     setLoading(true)
-    getPokemonList().then(() => { setListReady(true); setLoading(false) })
+    getPokemonList()
+      .then((list) => {
+        if (!mounted) return
+        setAllPokemon(list)
+        setListReady(true)
+      })
+      .catch(() => {
+        toast.error('No se pudo cargar la Pokédex')
+      })
+      .finally(() => {
+        if (mounted) setLoading(false)
+      })
+
+    return () => {
+      mounted = false
+    }
   }, [])
 
   useEffect(() => {
-    if (!listReady || query.length < 2) { setSuggestions([]); return }
-    const q = query.toLowerCase()
-    setSuggestions(
-      (cachedPokemonList ?? []).filter((p) => p.name.startsWith(q)).slice(0, 8).map((p) => p.name)
-    )
-  }, [query, listReady])
+    const q = query.trim().toLowerCase()
+    if (!q) {
+      setSuggestions([])
+      return
+    }
+
+    const next = allPokemon
+      .map((p) => p.name)
+      .filter((name) => name.includes(q))
+      .slice(0, 8)
+
+    setSuggestions(next)
+  }, [query, allPokemon])
 
   function select(name: string) {
     onAdd(name)
@@ -272,27 +368,38 @@ function PokemonSearch({
   return (
     <div className="relative mt-3">
       <div className="relative">
-        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
+        <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-white/36" />
         <Input
           ref={inputRef}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder={disabled ? (disabledReason ?? 'Desactivado') : listReady ? 'Buscar Pokémon…' : 'Cargando Pokédex…'}
+          placeholder={
+            disabled
+              ? disabledReason ?? 'Desactivado'
+              : listReady
+              ? 'Buscar Pokémon…'
+              : 'Cargando Pokédex…'
+          }
           disabled={disabled || !listReady}
-          className="pl-8 text-sm"
           autoComplete="off"
+          className="border-white/10 bg-black/20 pl-9 text-sm text-white placeholder:text-white/30"
         />
         {loading && (
-          <Loader2 className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground animate-spin" />
+          <Loader2 className="absolute right-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 animate-spin text-white/35" />
         )}
       </div>
+
       {suggestions.length > 0 && (
-        <ul className="absolute z-50 mt-1 w-full bg-popover border rounded-lg shadow-lg overflow-hidden">
+        <ul className="absolute z-50 mt-1 w-full overflow-hidden rounded-xl border border-white/10 bg-[#0b1020] shadow-2xl">
           {suggestions.map((name) => (
             <li key={name}>
               <button
-                className="w-full text-left px-3 py-1.5 text-sm capitalize hover:bg-accent transition-colors"
-                onMouseDown={(e) => { e.preventDefault(); select(name) }}
+                type="button"
+                className="w-full px-3 py-2 text-left text-sm capitalize text-white/82 transition hover:bg-white/6"
+                onMouseDown={(e) => {
+                  e.preventDefault()
+                  select(name)
+                }}
               >
                 {name.replace(/-/g, ' ')}
               </button>
@@ -303,8 +410,6 @@ function PokemonSearch({
     </div>
   )
 }
-
-// ─── Pokemon grid ──────────────────────────────────────────────────────────────
 
 function PokemonGrid({
   pokemon,
@@ -321,6 +426,7 @@ function PokemonGrid({
   addDisabled,
   addDisabledReason,
   emptyMessage = 'Nada aquí todavía.',
+  maxHeight,
 }: {
   pokemon: PokemonEntry[]
   canEdit: boolean
@@ -336,49 +442,57 @@ function PokemonGrid({
   addDisabled?: boolean
   addDisabledReason?: string
   emptyMessage?: string
+  maxHeight?: string
 }) {
-  const cells = slots
-    ? Array.from({ length: slots }, (_, i) => pokemon[i] ?? null)
-    : pokemon
+  const cells = slots ? Array.from({ length: slots }, (_, i) => pokemon[i] ?? null) : pokemon
 
   return (
     <div>
       {cells.length === 0 && !slots ? (
-        <p className="text-sm text-muted-foreground py-6 text-center">{emptyMessage}</p>
+        <p className="py-6 text-center text-sm text-white/40">{emptyMessage}</p>
       ) : (
-        <div className={cn(
-          'grid',
-          compact ? 'gap-4 grid-cols-5 sm:grid-cols-6 md:grid-cols-8' :
-          slots === 6 ? 'gap-3 grid-cols-3 sm:grid-cols-6' : 'gap-4 grid-cols-4 sm:grid-cols-6 md:grid-cols-8'
-        )}>
-          {cells.map((entry, i) =>
-            entry ? (
-              <PokemonCard
-                key={`${entry.species}-${i}`}
-                entry={entry}
-                canEdit={canEdit}
-                editMode={editMode}
-                isMvp={isTeam && entry.species === mvpSpecies}
-                isTeam={isTeam}
-                compact={compact}
-                onRemove={() => onRemove(i)}
-                onNicknameChange={(nick) => onNicknameChange(i, nick)}
-                onToggleMvp={() => onToggleMvp(entry.species)}
-              />
-            ) : slots ? (
-              <EmptySlot key={`empty-${i}`} />
-            ) : null
-          )}
+        <div
+          className={cn(maxHeight && 'hud-scrollbar overflow-y-auto pr-1')}
+          style={maxHeight ? { maxHeight } : undefined}
+        >
+          <div
+            className={cn(
+              'grid',
+              compact
+                ? 'grid-cols-4 gap-2'
+                : slots === 6
+                ? 'grid-cols-2 gap-3 sm:grid-cols-3'
+                : 'grid-cols-4 gap-2',
+            )}
+          >
+            {cells.map((entry, i) =>
+              entry ? (
+                <PokemonCard
+                  key={`${entry.species}-${i}`}
+                  entry={entry}
+                  canEdit={canEdit}
+                  editMode={editMode}
+                  isMvp={isTeam && entry.species === mvpSpecies}
+                  isTeam={isTeam}
+                  compact={compact}
+                  onRemove={() => onRemove(i)}
+                  onNicknameChange={(nick) => onNicknameChange(i, nick)}
+                  onToggleMvp={() => onToggleMvp(entry.species)}
+                />
+              ) : slots ? (
+                <EmptySlot key={`empty-${i}`} />
+              ) : null,
+            )}
+          </div>
         </div>
       )}
+
       {editMode && (
         <PokemonSearch onAdd={onAdd} disabled={addDisabled} disabledReason={addDisabledReason} />
       )}
     </div>
   )
 }
-
-// ─── Main exported component ───────────────────────────────────────────────────
 
 export function PokemonSection({
   profileId,
@@ -401,8 +515,6 @@ export function PokemonSection({
   const [boxEditMode, setBoxEditMode] = useState(false)
   const [isPending, startTransition] = useTransition()
 
-  // ── Team save helper ──
-
   function saveTeam(next: PokemonEntry[], clearMvpSpecies?: string) {
     const prevTeam = team
     const prevMvp = mvp
@@ -419,6 +531,7 @@ export function PokemonSection({
         if (shouldClear) setMvp(prevMvp)
         return
       }
+
       if (shouldClear) {
         await updateMvp(profileId, null)
         router.refresh()
@@ -426,11 +539,10 @@ export function PokemonSection({
     })
   }
 
-  // ── Box save helper ──
-
   function saveBox(next: PokemonEntry[]) {
     const prev = box
     setBox(next)
+
     startTransition(async () => {
       const result = await updateBox(profileId, next)
       if (result.error) {
@@ -440,12 +552,11 @@ export function PokemonSection({
     })
   }
 
-  // ── MVP toggle ──
-
   function handleToggleMvp(species: string) {
     const next = mvp === species ? null : species
     const prev = mvp
     setMvp(next)
+
     startTransition(async () => {
       const result = await updateMvp(profileId, next)
       if (result.error) {
@@ -453,11 +564,9 @@ export function PokemonSection({
         setMvp(prev)
         return
       }
-      router.refresh() // re-renders Nuzlocke State card with updated MVP display
+      router.refresh()
     })
   }
-
-  // ── Team handlers ──
 
   function addToTeam(species: string) {
     if (team.length >= 6) return
@@ -472,15 +581,13 @@ export function PokemonSection({
     const removed = team[index]
     saveTeam(
       team.filter((_, i) => i !== index),
-      removed?.species // pass species so saveTeam can clear MVP if needed
+      removed?.species,
     )
   }
 
   function updateTeamNickname(index: number, nickname: string) {
     saveTeam(team.map((e, i) => (i === index ? { ...e, nickname } : e)))
   }
-
-  // ── Box handlers ──
 
   function addToBox(species: string) {
     if (box.some((e) => e.species === species)) {
@@ -499,34 +606,31 @@ export function PokemonSection({
   }
 
   return (
-    <div className="space-y-4">
-      {/* ── Team ── */}
-      <Card className="overflow-visible">
-        <CardHeader className="pb-3 flex flex-row items-center justify-between gap-2">
-          <div>
-            <CardTitle className="text-base">Equipo Activo</CardTitle>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              {team.length}/6 Pokémon
-              {teamEditMode && canEdit && (
-                <span className="ml-2 text-amber-600 dark:text-amber-400">
-                  · 👑 para marcar MVP
-                </span>
-              )}
-            </p>
-          </div>
-          {canEdit && (
+    <div className="flex h-full flex-col gap-3">
+      <HubCard
+        title="Team Hub"
+        subtitle={teamEditMode && canEdit ? 'Modo edición · 👑 para MVP' : 'Equipo activo'}
+        className="flex-[0_0_40%]"
+        action={
+          canEdit ? (
             <Button
-              variant={teamEditMode ? 'default' : 'outline'}
+              variant={teamEditMode ? 'default' : 'ghost'}
               size="sm"
               onClick={() => setTeamEditMode((v) => !v)}
               disabled={isPending}
-              className="gap-1.5 shrink-0"
+              className="h-8 gap-1.5 border-white/10 bg-white/5 px-2.5 text-xs text-white/84 hover:bg-white/10"
             >
-              {teamEditMode ? 'Listo' : <><Plus className="h-3.5 w-3.5" />Editar</>}
+              {teamEditMode ? 'Listo' : (
+                <>
+                  <Plus className="h-3 w-3" />
+                  Editar
+                </>
+              )}
             </Button>
-          )}
-        </CardHeader>
-        <CardContent>
+          ) : undefined
+        }
+      >
+        {teamEditMode ? (
           <PokemonGrid
             pokemon={team}
             canEdit={canEdit}
@@ -541,44 +645,55 @@ export function PokemonSection({
             addDisabled={team.length >= 6}
             addDisabledReason="Equipo completo (6/6)"
           />
-        </CardContent>
-      </Card>
+        ) : (
+          <>
+            <ActiveTeamDisplay team={team} />
+            <div className="mt-3 flex items-center justify-between rounded-xl border border-white/8 bg-black/20 px-3 py-2 text-sm">
+              <span className="text-white/48">Equipo activo</span>
+              <span className="font-heading text-[24px] font-bold text-cyan-100">{team.length}/6 Pokémon</span>
+            </div>
+          </>
+        )}
+      </HubCard>
 
-      {/* ── Box ── */}
-      <Card className="overflow-visible">
-        <CardHeader className="pb-3 flex flex-row items-center justify-between gap-2">
-          <div>
-            <CardTitle className="text-base">Caja PC</CardTitle>
-            <p className="text-xs text-muted-foreground mt-0.5">{box.length} Pokémon almacenados</p>
-          </div>
-          {canEdit && (
+      <HubCard
+        title="PC Storage"
+        subtitle={`${box.length} Pokémon almacenados`}
+        className="min-h-0 flex-1"
+        action={
+          canEdit ? (
             <Button
-              variant={boxEditMode ? 'default' : 'outline'}
+              variant={boxEditMode ? 'default' : 'ghost'}
               size="sm"
               onClick={() => setBoxEditMode((v) => !v)}
               disabled={isPending}
-              className="gap-1.5 shrink-0"
+              className="h-8 gap-1.5 border-white/10 bg-white/5 px-2.5 text-xs text-white/84 hover:bg-white/10"
             >
-              {boxEditMode ? 'Listo' : <><Plus className="h-3.5 w-3.5" />Editar</>}
+              {boxEditMode ? 'Listo' : (
+                <>
+                  <Plus className="h-3 w-3" />
+                  Editar
+                </>
+              )}
             </Button>
-          )}
-        </CardHeader>
-        <CardContent>
-          <PokemonGrid
-            pokemon={box}
-            canEdit={canEdit}
-            editMode={boxEditMode}
-            mvpSpecies={null}
-            isTeam={false}
-            compact={box.length > 8}
-            onRemove={removeFromBox}
-            onAdd={addToBox}
-            onNicknameChange={updateBoxNickname}
-            onToggleMvp={() => {}}
-            emptyMessage="La caja está vacía. Añade Pokémon que formen parte de tu partida pero no estén en tu equipo activo."
-          />
-        </CardContent>
-      </Card>
+          ) : undefined
+        }
+      >
+        <PokemonGrid
+          pokemon={box}
+          canEdit={canEdit}
+          editMode={boxEditMode}
+          mvpSpecies={null}
+          isTeam={false}
+          compact
+          onRemove={removeFromBox}
+          onAdd={addToBox}
+          onNicknameChange={updateBoxNickname}
+          onToggleMvp={() => {}}
+          emptyMessage="La caja está vacía."
+          maxHeight={boxEditMode ? '420px' : '300px'}
+        />
+      </HubCard>
     </div>
   )
 }

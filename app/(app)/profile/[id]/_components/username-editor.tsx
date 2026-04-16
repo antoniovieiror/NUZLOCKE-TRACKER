@@ -14,7 +14,11 @@ interface UsernameEditorProps {
   canEdit: boolean
 }
 
-export function UsernameEditor({ profileId, initialUsername, canEdit }: UsernameEditorProps) {
+export function UsernameEditor({
+  profileId,
+  initialUsername,
+  canEdit,
+}: UsernameEditorProps) {
   const router = useRouter()
   const [editing, setEditing] = useState(false)
   const [value, setValue] = useState(initialUsername)
@@ -22,9 +26,9 @@ export function UsernameEditor({ profileId, initialUsername, canEdit }: Username
   const inputRef = useRef<HTMLInputElement>(null)
 
   function startEditing() {
+    if (!canEdit) return
     setValue(initialUsername)
     setEditing(true)
-    // Focus after render
     setTimeout(() => inputRef.current?.focus(), 0)
   }
 
@@ -59,7 +63,7 @@ export function UsernameEditor({ profileId, initialUsername, canEdit }: Username
 
   if (!canEdit) {
     return (
-      <h1 className="text-2xl font-bold tracking-tight truncate">
+      <h1 className="font-heading text-[clamp(22px,3vw,42px)] font-bold leading-none tracking-tight text-slate-100">
         {initialUsername}
       </h1>
     )
@@ -67,7 +71,7 @@ export function UsernameEditor({ profileId, initialUsername, canEdit }: Username
 
   if (editing) {
     return (
-      <div className="flex items-center gap-2">
+      <div className="flex max-w-full items-center gap-2">
         <input
           ref={inputRef}
           value={value}
@@ -76,16 +80,17 @@ export function UsernameEditor({ profileId, initialUsername, canEdit }: Username
           disabled={isPending}
           maxLength={30}
           className={cn(
-            'text-2xl font-bold tracking-tight bg-transparent border-b-2 border-primary',
-            'focus:outline-none w-full max-w-[220px] pb-0.5',
-            'disabled:opacity-60'
+            'min-w-0 flex-1 border-b-2 border-cyan-300/50 bg-transparent pb-1',
+            'font-heading text-[clamp(22px,3vw,42px)] font-bold leading-none tracking-tight text-slate-100',
+            'focus:outline-none disabled:opacity-60',
           )}
         />
         <button
+          type="button"
           onClick={save}
           disabled={isPending}
           aria-label="Confirmar nombre"
-          className="text-green-600 hover:text-green-500 disabled:opacity-40 transition-colors"
+          className="rounded-full bg-emerald-400/12 p-1.5 text-emerald-300 transition hover:bg-emerald-400/20 disabled:opacity-40"
         >
           {isPending ? (
             <Loader2 className="h-4 w-4 animate-spin" />
@@ -94,10 +99,11 @@ export function UsernameEditor({ profileId, initialUsername, canEdit }: Username
           )}
         </button>
         <button
+          type="button"
           onClick={cancel}
           disabled={isPending}
           aria-label="Cancelar"
-          className="text-muted-foreground hover:text-foreground disabled:opacity-40 transition-colors"
+          className="rounded-full bg-white/6 p-1.5 text-white/55 transition hover:bg-white/10 hover:text-white/85 disabled:opacity-40"
         >
           <X className="h-4 w-4" />
         </button>
@@ -106,16 +112,17 @@ export function UsernameEditor({ profileId, initialUsername, canEdit }: Username
   }
 
   return (
-    <div className="flex items-center gap-1.5 group/username">
-      <h1 className="text-2xl font-bold tracking-tight truncate">
+    <div className="group/username flex max-w-full items-center gap-2">
+      <h1 className="truncate font-heading text-[clamp(22px,3vw,42px)] font-bold leading-none tracking-tight text-slate-100">
         {initialUsername}
       </h1>
       <button
+        type="button"
         onClick={startEditing}
         aria-label="Editar nombre"
-        className="opacity-0 group-hover/username:opacity-100 transition-opacity p-1 rounded-md hover:bg-muted"
+        className="rounded-full bg-white/0 p-1.5 text-white/40 opacity-0 transition group-hover/username:opacity-100 hover:bg-white/10 hover:text-cyan-200"
       >
-        <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
+        <Pencil className="h-4 w-4" />
       </button>
     </div>
   )
