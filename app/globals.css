@@ -8,7 +8,7 @@
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-mono: 'IBM Plex Mono', var(--font-geist-mono), monospace;
   --font-heading: 'Rajdhani', sans-serif;
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
@@ -179,5 +179,119 @@
   /* ── Heading font utility ── */
   .font-heading {
     font-family: 'Rajdhani', sans-serif;
+  }
+
+  /* ══════════════════════════════════════════════════
+     LEADERBOARD PAGE — animations & interactive states
+     ══════════════════════════════════════════════════ */
+
+  @keyframes lb-fade-up {
+    from { opacity: 0; transform: translateY(22px); }
+    to   { opacity: 1; transform: translateY(0);    }
+  }
+  @keyframes lb-fade-in {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+  @keyframes lb-gold-pulse {
+    0%, 100% { box-shadow: 0 0 28px rgba(255,223,0,0.38), 0 0 56px rgba(255,223,0,0.10); }
+    50%       { box-shadow: 0 0 52px rgba(255,223,0,0.65), 0 0 96px rgba(255,223,0,0.20); }
+  }
+  @keyframes lb-float-crown {
+    0%, 100% { transform: translateY(0)   rotate(-4deg); }
+    50%       { transform: translateY(-6px) rotate(4deg);  }
+  }
+  @keyframes lb-shimmer {
+    0%   { background-position: -200% center; }
+    100% { background-position:  200% center; }
+  }
+  @keyframes lb-grid-drift {
+    0%   { background-position: 0    0;    }
+    100% { background-position: 60px 60px; }
+  }
+  @keyframes lb-pokeball-spin {
+    to { transform: translateY(-50%) rotate(360deg); }
+  }
+  @keyframes lb-bar-grow {
+    from { width: 0; }
+  }
+  @keyframes lb-energy-sweep {
+    0%   { transform: translateX(-100%); opacity: 0; }
+    10%  { opacity: 1; }
+    90%  { opacity: 1; }
+    100% { transform: translateX(100vw);  opacity: 0; }
+  }
+  @keyframes lb-pulse-ring {
+    0%   { transform: scale(1);    opacity: 0.6; }
+    100% { transform: scale(1.55); opacity: 0;   }
+  }
+
+  /* Player row hover */
+  .lb-player-row {
+    transition: background 0.18s ease, transform 0.15s ease;
+    cursor: pointer;
+  }
+  .lb-player-row:hover {
+    background: linear-gradient(90deg, rgba(255,223,0,0.055) 0%, rgba(255,223,0,0.012) 60%, transparent 100%) !important;
+    transform: translateX(4px);
+  }
+  .lb-player-row:hover .lb-rank-num {
+    color: rgba(255,223,0,0.55) !important;
+  }
+
+  /* Tab link hover */
+  .lb-tab-link:hover {
+    color: rgba(255,223,0,0.55) !important;
+    background: rgba(255,223,0,0.05) !important;
+  }
+
+  /* ── Podium slot hover — spotlight effect ── */
+  .lb-podium {
+    position: relative;
+  }
+  .lb-podium-slot {
+    transition:
+      transform       0.32s cubic-bezier(0.34, 1.56, 0.64, 1),
+      opacity         0.22s ease,
+      filter          0.22s ease;
+    position: relative;
+  }
+
+  /* Dim other slots when any one is hovered */
+  .lb-podium:has(.lb-podium-slot:hover) .lb-podium-slot:not(:hover) {
+    opacity: 0.55;
+    transform: scale(0.96) translateY(6px);
+    filter: brightness(0.70) saturate(0.6);
+  }
+
+  /* The hovered slot pops forward */
+  .lb-podium-slot:hover {
+    transform: translateY(-18px) scale(1.07) !important;
+    opacity: 1 !important;
+    z-index: 30;
+  }
+  /* Champion gets extra glow drop-shadow */
+  .lb-podium-slot.is-champion:hover {
+    filter: brightness(1.18) drop-shadow(0 0 28px rgba(255,223,0,0.50)) !important;
+  }
+  /* Platforms get depth shadow on hover */
+  .lb-podium-slot:hover .lb-platform-face {
+    box-shadow: 0 32px 60px rgba(0,0,0,0.70), 0 0 40px rgba(0,0,0,0.40);
+  }
+  .lb-podium-slot.is-champion:hover .lb-platform-face {
+    box-shadow: 0 32px 60px rgba(0,0,0,0.70), 0 -4px 40px rgba(255,223,0,0.18);
+  }
+
+  /* Pulse ring on champion avatar on hover */
+  .lb-podium-slot.is-champion:hover .lb-champion-ring::after {
+    content: '';
+    position: absolute;
+    inset: -4px;
+    border-radius: 9999px;
+    border: 2px solid rgba(255,223,0,0.60);
+    animation: lb-pulse-ring 1.2s ease-out infinite;
+  }
+  .lb-champion-ring {
+    position: relative;
   }
 }

@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
-import { Sidebar } from '@/components/layout/sidebar'
+import { Navbar } from '@/components/layout/navbar'
 import { NotificationEnvelope } from '@/components/notification-envelope'
 import { getUnreadNotifications } from '@/lib/actions/notifications'
 import type { Profile } from '@/lib/types'
@@ -23,7 +23,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   }
 
   return (
-    <div className="dark relative min-h-screen bg-background">
+    <div className="dark relative min-h-screen bg-background flex flex-col">
 
       {/* ── Geometric grid (Unova urban) ── */}
       <div
@@ -43,11 +43,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         <div className="absolute bottom-0 -left-24 h-[300px] w-[500px] rounded-full bg-blue-700/4 blur-3xl" />
       </div>
 
-      {/* ── Sidebar ── */}
-      <Sidebar user={profile} />
+      {/* ── Top Navbar ── */}
+      <Navbar user={profile} />
 
-      {/* ── Main content (offset by sidebar width) ── */}
-      <main className="ml-16 lg:ml-60 min-h-screen">
+      {/* ── Main content ── */}
+      <main className="flex-1">
         <div className="container mx-auto px-5 py-8 max-w-5xl">
           {children}
         </div>
