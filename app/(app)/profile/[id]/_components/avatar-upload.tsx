@@ -7,7 +7,6 @@ import { toast } from 'sonner'
 
 import { createClient } from '@/lib/supabase/client'
 import { updateAvatar } from '@/lib/actions/profile'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { cn } from '@/lib/utils'
 
 interface AvatarUploadProps {
@@ -77,32 +76,31 @@ export function AvatarUpload({ profileId, avatarUrl, username, canEdit }: Avatar
   const displayUrl = previewUrl ?? avatarUrl ?? undefined
 
   return (
-    <div className="relative shrink-0 group/avatar">
-      <Avatar className="h-20 w-20 ring-4 ring-white/80 dark:ring-white/10 shadow-lg">
-        <AvatarImage src={displayUrl} alt={username} />
-        <AvatarFallback className="text-2xl font-bold bg-gradient-to-br from-violet-100 to-sky-100 dark:from-indigo-900 dark:to-blue-900 text-violet-700 dark:text-violet-300">
-          {username.slice(0, 2).toUpperCase()}
-        </AvatarFallback>
-      </Avatar>
+    <div className="relative shrink-0 group/avatar tc-avatar-ring-inner" style={displayUrl ? { backgroundImage: `url(${displayUrl})` } : undefined}>
+      {!displayUrl && (
+        <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 42, color: '#00c8e8', textShadow: '0 0 12px rgba(0,200,232,0.55)', position: 'absolute', zIndex: 0 }}>
+          {username.slice(0, 1).toUpperCase()}
+        </span>
+      )}
 
       {canEdit && (
         <>
-          {/* Pencil overlay — visible on hover or while uploading */}
           <button
             onClick={() => fileInputRef.current?.click()}
             disabled={uploading}
             aria-label="Cambiar foto de perfil"
             className={cn(
               'absolute inset-0 rounded-full flex items-center justify-center',
-              'bg-black/0 hover:bg-black/40 transition-all duration-200',
+              'bg-black/0 hover:bg-black/60 transition-all duration-200',
               'opacity-0 group-hover/avatar:opacity-100',
-              uploading && 'opacity-100 bg-black/40 cursor-not-allowed'
+              uploading && 'opacity-100 bg-black/60 cursor-not-allowed'
             )}
+            style={{ zIndex: 2 }}
           >
             {uploading ? (
               <Loader2 className="h-5 w-5 text-white animate-spin" />
             ) : (
-              <Pencil className="h-5 w-5 text-white drop-shadow" />
+              <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', color: '#00c8e8' }}>CAMBIAR</span>
             )}
           </button>
 

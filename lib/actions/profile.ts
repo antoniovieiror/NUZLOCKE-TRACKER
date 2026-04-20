@@ -29,7 +29,7 @@ async function assertCanEdit(profileId: string) {
 
 export async function updateNuzlockeState(
   profileId: string,
-  data: { badges: number; deaths: number; wipes: number; notes: string }
+  data: { badges: number; wipes: number; notes: string }
 ) {
   const { supabase, error } = await assertCanEdit(profileId)
   if (error) return { error }
@@ -38,7 +38,6 @@ export async function updateNuzlockeState(
     .from('profiles')
     .update({
       badges: Math.max(0, Math.floor(data.badges)),
-      deaths: Math.max(0, Math.floor(data.deaths)),
       wipes: Math.max(0, Math.floor(data.wipes)),
       notes: data.notes.trim() || null,
     })

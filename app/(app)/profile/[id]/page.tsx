@@ -1,125 +1,165 @@
 import { notFound } from 'next/navigation'
-import Link from 'next/link'
-import { ChevronLeft, Skull, Shield, Zap, Star } from 'lucide-react'
 
 import { createClient } from '@/lib/supabase/server'
-import { cn } from '@/lib/utils'
 import type { Profile, LeaderboardEntry } from '@/lib/types'
-
-import { Badge } from '@/components/ui/badge'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Separator } from '@/components/ui/separator'
 
 import { AvatarUpload } from './_components/avatar-upload'
 import { UsernameEditor } from './_components/username-editor'
 import { EditStateDialog } from './_components/edit-state-dialog'
-import { PokemonSection } from './_components/pokemon-section'
-import { MvpCard, MvpEmpty } from './_components/mvp-card'
+import { TeamEditDialog } from './_components/team-edit-dialog'
 import { SaveSyncWidget } from './_components/save-sync-widget'
+import { StatGauges } from './_components/stat-gauges'
+import { TeamHex } from './_components/team-hex'
+import { PCStorageGrid } from './_components/pc-storage-grid'
+import { GraveyardGrid } from './_components/graveyard-grid'
+import { MvpPodium, MvpPodiumEmpty } from './_components/mvp-podium'
+import './profile.css'
 
-// ─── Stat card ────────────────────────────────────────────────────────────────
+// ─── Dragon Ball badge SVG ───────────────────────────────────────────────────
 
-function StatCard({
-  label, value, sub, accent, accentBar,
-}: {
-  label: string; value: string | number; sub?: string; accent?: string; accentBar?: string
-}) {
+const BADGE_NAMES = [
+  '1 Estrella', '2 Estrellas', '3 Estrellas', '4 Estrellas',
+  '5 Estrellas', '6 Estrellas', '7 Estrellas', '8 Estrellas',
+  '9 Estrellas', '10 Estrellas', '11 Estrellas', '12 Estrellas',
+]
+
+// Star positions for 1-12 stars, laid out inside a unit circle (cx, cy in 0-100 space)
+const STAR_LAYOUTS: [number, number][][] = [
+  /* 1  */ [[50, 50]],
+  /* 2  */ [[50, 36], [50, 64]],
+  /* 3  */ [[50, 32], [34, 60], [66, 60]],
+  /* 4  */ [[50, 28], [72, 50], [50, 72], [28, 50]],
+  /* 5  */ [[50, 26], [72, 42], [64, 68], [36, 68], [28, 42]],
+  /* 6  */ [[50, 26], [72, 38], [72, 62], [50, 74], [28, 62], [28, 38]],
+  /* 7  */ [[50, 50], [50, 26], [72, 38], [72, 62], [50, 74], [28, 62], [28, 38]],
+  /* 8  */ [[50, 50], [50, 24], [74, 34], [74, 58], [56, 74], [44, 74], [26, 58], [26, 34]],
+  /* 9  */ [[50, 50], [50, 22], [72, 30], [78, 54], [64, 74], [36, 74], [22, 54], [28, 30], [50, 74]],
+  /* 10 */ [[50, 50], [50, 22], [73, 28], [80, 50], [73, 72], [50, 78], [27, 72], [20, 50], [27, 28], [50, 42]],
+  /* 11 */ [[50, 50], [50, 20], [72, 26], [82, 44], [78, 66], [62, 78], [38, 78], [22, 66], [18, 44], [28, 26], [50, 36]],
+  /* 12 */ [[50, 50], [50, 20], [72, 24], [84, 40], [84, 60], [72, 76], [50, 80], [28, 76], [16, 60], [16, 40], [28, 24], [50, 36]],
+]
+
+function DragonBallSvg({ stars }: { stars: number }) {
+  const positions = STAR_LAYOUTS[stars - 1]
+  // Star size scales down as count increases
+  const starR = stars <= 4 ? 7 : stars <= 7 ? 6 : stars <= 9 ? 5 : 4.5
+
   return (
-    <Card className="overflow-hidden transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 border-border/50">
-      {accentBar && <div className={cn('h-0.5 w-full', accentBar)}/>}
-      <CardContent className="pt-4 pb-4 px-5">
-        <p className="text-[10px] text-muted-foreground font-black uppercase tracking-[0.15em] mb-1">{label}</p>
-        <p className={cn('text-2xl font-black tabular-nums', accent)}>{value}</p>
-        {sub && <p className="text-xs text-muted-foreground/70 mt-0.5">{sub}</p>}
-      </CardContent>
-    </Card>
+    <svg viewBox="0 0 100 100" className="tc-dragonball-svg" aria-hidden>
+      <defs>
+        <radialGradient id={`db-grad-${stars}`} cx="35%" cy="30%" r="65%">
+          <stop offset="0%" stopColor="#ffe47a" />
+          <stop offset="40%" stopColor="#f5a623" />
+          <stop offset="100%" stopColor="#c46c0a" />
+        </radialGradient>
+        <radialGradient id={`db-shine-${stars}`} cx="32%" cy="28%" r="30%">
+          <stop offset="0%" stopColor="rgba(255,255,255,0.75)" />
+          <stop offset="100%" stopColor="rgba(255,255,255,0)" />
+        </radialGradient>
+      </defs>
+      {/* Main sphere */}
+      <circle cx="50" cy="50" r="46" fill={`url(#db-grad-${stars})`} />
+      {/* Specular highlight */}
+      <circle cx="50" cy="50" r="46" fill={`url(#db-shine-${stars})`} />
+      {/* Stars */}
+      {positions.map(([cx, cy], i) => (
+        <polygon
+          key={i}
+          points={starPoints(cx, cy, starR)}
+          fill="#c0392b"
+          stroke="#922b21"
+          strokeWidth="0.8"
+        />
+      ))}
+      {/* Rim highlight */}
+      <circle cx="50" cy="50" r="46" fill="none" stroke="rgba(255,255,255,0.15)" strokeWidth="1.5" />
+    </svg>
   )
 }
 
-// ─── Trainer card header ──────────────────────────────────────────────────────
+/** Generate a 4-pointed star polygon at (cx,cy) with radius r */
+function starPoints(cx: number, cy: number, r: number): string {
+  const pts: string[] = []
+  const innerR = r * 0.4
+  for (let i = 0; i < 8; i++) {
+    const angle = (Math.PI / 4) * i - Math.PI / 2
+    const rad = i % 2 === 0 ? r : innerR
+    pts.push(`${cx + rad * Math.cos(angle)},${cy + rad * Math.sin(angle)}`)
+  }
+  return pts.join(' ')
+}
 
-function TrainerCardHeader({
-  profile, stats, canEdit, isOwnProfile,
-}: {
-  profile: Profile
-  stats: LeaderboardEntry | null
+// ─── Gym Badges (console style) ──────────────────────────────────────────────
+
+function GymBadgesPanel({ count, canEdit, profileId, profile }: {
+  count: number
   canEdit: boolean
-  isOwnProfile: boolean
+  profileId: string
+  profile: Profile
 }) {
   return (
-    <div className="relative rounded-2xl overflow-hidden border border-white/8 shadow-xl">
-      <svg
-        className="absolute inset-0 w-full h-full"
-        viewBox="0 0 900 200"
-        preserveAspectRatio="xMidYMid slice"
-        aria-hidden
-      >
-        <defs>
-          <linearGradient id="tcBase" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0%" stopColor="#080c1c"/>
-            <stop offset="100%" stopColor="#060810"/>
-          </linearGradient>
-          <radialGradient id="tcGlow" cx="15%" cy="50%" r="60%">
-            <stop offset="0%" stopColor="#00c8e8" stopOpacity="0.10"/>
-            <stop offset="100%" stopColor="#00c8e8" stopOpacity="0"/>
-          </radialGradient>
-          <radialGradient id="tcRight" cx="90%" cy="30%" r="50%">
-            <stop offset="0%" stopColor="#4060ff" stopOpacity="0.08"/>
-            <stop offset="100%" stopColor="#4060ff" stopOpacity="0"/>
-          </radialGradient>
-        </defs>
-        <rect width="900" height="200" fill="url(#tcBase)"/>
-        <rect width="900" height="200" fill="url(#tcGlow)"/>
-        <rect width="900" height="200" fill="url(#tcRight)"/>
-        <g stroke="rgba(0,200,232,0.022)" strokeWidth="0.6" fill="none">
-          <ellipse cx="150" cy="100" rx="130" ry="90"/>
-          <ellipse cx="150" cy="100" rx="96" ry="66"/>
-          <ellipse cx="150" cy="100" rx="64" ry="44"/>
-          <ellipse cx="750" cy="80" rx="110" ry="76"/>
-          <ellipse cx="750" cy="80" rx="78" ry="52"/>
-          <ellipse cx="750" cy="80" rx="48" ry="32"/>
-        </g>
-        <circle cx="850" cy="160" r="80" fill="none" stroke="rgba(255,255,255,0.022)" strokeWidth="0.7"/>
-        <circle cx="850" cy="160" r="55" fill="none" stroke="rgba(255,255,255,0.016)" strokeWidth="0.6"/>
-        {[[60,20],[140,15],[300,25],[500,18],[700,22],[800,12],[880,30]].map(([x,y],i) => (
-          <circle key={i} cx={x} cy={y} r="0.7" fill="white" opacity={0.2+(i%3)*0.08}/>
-        ))}
-      </svg>
+    <div className="tc-panel tc-fade-in-up">
+      <span className="tc-mini-rivet tl" /><span className="tc-mini-rivet tr" />
+      <span className="tc-mini-rivet bl" /><span className="tc-mini-rivet br" />
+      <div className="tc-panel-header">
+        <h2>Medallas de Gimnasio</h2>
+        {canEdit && (
+          <EditStateDialog
+            profileId={profileId}
+            initialValues={{ badges: profile.badges, wipes: profile.wipes, notes: profile.notes }}
+          />
+        )}
+      </div>
+      <div className="tc-panel-inner">
+        <div className="tc-badges-grid">
+          {Array.from({ length: 12 }).map((_, i) => {
+            const earned = i < count
+            return (
+              <div
+                key={i}
+                className={`tc-badge-slot ${earned ? 'earned' : 'empty'}`}
+                title={earned ? `${BADGE_NAMES[i]} (${i + 1}/12)` : undefined}
+                style={{ '--db-index': i } as React.CSSProperties}
+              >
+                {earned ? (
+                  <DragonBallSvg stars={i + 1} />
+                ) : (
+                  <div className="tc-badge-empty-circle" />
+                )}
+              </div>
+            )
+          })}
+        </div>
+        <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 13, color: 'var(--tc-accent)', textAlign: 'center', marginTop: 10, letterSpacing: '0.1em' }}>
+          {count}/12
+        </div>
+      </div>
+    </div>
+  )
+}
 
-      {/* Top accent bar — cyan */}
-      <div className="absolute top-0 inset-x-0 h-0.5 bg-gradient-to-r from-primary/60 via-cyan-300/50 to-primary/60"/>
+// ─── Nuzlocke Stats ──────────────────────────────────────────────────────────
 
-      <div className="relative flex flex-col sm:flex-row sm:items-center gap-5 p-6">
-        <AvatarUpload
-          profileId={profile.id}
-          avatarUrl={profile.avatar_url}
-          username={profile.username}
-          canEdit={canEdit}
-        />
-
-        <div className="flex-1 min-w-0">
-          <div className="flex flex-wrap items-center gap-2 mb-1.5">
-            <UsernameEditor profileId={profile.id} initialUsername={profile.username} canEdit={canEdit}/>
-            {profile.role === 'admin' && (
-              <Badge variant="secondary" className="gap-1 text-xs bg-primary/15 text-primary border-primary/20">
-                <Shield className="h-3 w-3"/>Admin
-              </Badge>
-            )}
-            {profile.status === 'inactive' && (
-              <Badge variant="outline" className="text-white/40 border-white/15 text-xs">Inactivo</Badge>
-            )}
-            {isOwnProfile && (
-              <Badge variant="outline" className="text-white/30 border-white/10 text-xs">Tú</Badge>
-            )}
+function NuzlockeStatsPanel({ deaths, wipes }: { deaths: number; wipes: number; }) {
+  return (
+    <div className="tc-panel tc-fade-in-up">
+      <span className="tc-mini-rivet tl" /><span className="tc-mini-rivet tr" />
+      <span className="tc-mini-rivet bl" /><span className="tc-mini-rivet br" />
+      <div className="tc-panel-header"><h2>Nuzlocke Stats</h2></div>
+      <div className="tc-panel-inner">
+        <div className="flex flex-col gap-2.5">
+          <div className="tc-nuz-row">
+            <span className="lbl"><span>&#x1F480;</span> Muertes</span>
+            <span className={`val ${deaths > 0 ? 'red' : ''}`}>{deaths}</span>
           </div>
-          <p className="text-sm text-white/40">
-            Entrenador desde{' '}
-            {new Date(profile.created_at).toLocaleDateString('es-ES', { year: 'numeric', month: 'long' })}
-          </p>
-          {stats && stats.total_points > 0 && (
-            <p className="text-xs text-primary/70 mt-1 font-bold">
-              {stats.total_points} pts · {stats.total_wins}V {stats.total_losses}D · {Number(stats.winrate).toFixed(1)}%
-            </p>
+          <div className="tc-nuz-row">
+            <span className="lbl"><span>&#x26A1;</span> Wipes</span>
+            <span className={`val ${wipes > 0 ? 'amber' : 'green'}`}>{wipes}</span>
+          </div>
+          {deaths === 0 && wipes === 0 && (
+            <div className="text-center">
+              <span className="tc-cert-badge">&#x25C6; Nuzlocke Certified</span>
+            </div>
           )}
         </div>
       </div>
@@ -127,27 +167,110 @@ function TrainerCardHeader({
   )
 }
 
-// ─── Gym badges ───────────────────────────────────────────────────────────────
+// ─── Trainer Card (console style) ────────────────────────────────────────────
 
-function GymBadges({ count }: { count: number }) {
+function TrainerCardConsole({
+  profile, stats, canEdit, isOwnProfile,
+}: {
+  profile: Profile
+  stats: LeaderboardEntry | null
+  canEdit: boolean
+  isOwnProfile: boolean
+}) {
+  const points = stats?.total_points ?? 0
+  const wins = stats?.total_wins ?? 0
+  const losses = stats?.total_losses ?? 0
+  const winrate = Number(stats?.winrate ?? 0)
+
   return (
-    <div className="flex flex-wrap gap-1.5">
-      {Array.from({ length: 12 }).map((_, i) => (
-        <div key={i} className={cn(
-          'w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all duration-200',
-          i < count
-            ? 'bg-amber-500 border-amber-400 shadow shadow-amber-400/40'
-            : 'bg-muted/50 border-border/50 opacity-30'
-        )}>
-          {i < count && <Star className="h-2.5 w-2.5 text-amber-950 fill-amber-950" strokeWidth={0}/>}
+    <div className="tc-trainer-card tc-fade-in-up">
+      <span className="tc-corner tl" /><span className="tc-corner tr" />
+      <span className="tc-corner bl" /><span className="tc-corner br" />
+      <div className="tc-halo" />
+
+      {/* Avatar ring */}
+      <div className="tc-avatar-ring">
+        <AvatarUpload
+          profileId={profile.id}
+          avatarUrl={profile.avatar_url}
+          username={profile.username}
+          canEdit={canEdit}
+        />
+      </div>
+
+      {/* Name + tags */}
+      <div className="flex items-center justify-center gap-2.5 mb-2">
+        <UsernameEditor profileId={profile.id} initialUsername={profile.username} canEdit={canEdit} />
+        {profile.role === 'admin' && <span className="tc-tag admin">ADMIN</span>}
+        {isOwnProfile && <span className="tc-tag me">TU</span>}
+        {profile.status === 'inactive' && <span className="tc-tag inactive">Inactivo</span>}
+      </div>
+
+      <p style={{ margin: '4px 0 12px', fontSize: 12, color: '#8b92a8', textAlign: 'center' }}>
+        Entrenador desde{' '}
+        {new Date(profile.created_at).toLocaleDateString('es-ES', { year: 'numeric', month: 'long' })}
+      </p>
+
+      {(points > 0 || wins > 0) && (
+        <div className="flex justify-center">
+          <div className="tc-stats-inline">
+            <span>{points}<span className="lb">PTS</span></span>
+            <span className="dot">&middot;</span>
+            <span>{wins}V-{losses}D</span>
+            <span className="dot">&middot;</span>
+            <span>{winrate.toFixed(1)}%</span>
+          </div>
         </div>
-      ))}
-      <span className="text-xs text-muted-foreground ml-1 self-center tabular-nums">{count}/12</span>
+      )}
     </div>
   )
 }
 
-// ─── Page ─────────────────────────────────────────────────────────────────────
+// ─── Logbook ─────────────────────────────────────────────────────────────────
+
+function LogbookPanel({ notes }: { notes: string | null }) {
+  return (
+    <div className="tc-panel tc-fade-in-up">
+      <span className="tc-mini-rivet tl" /><span className="tc-mini-rivet tr" />
+      <span className="tc-mini-rivet bl" /><span className="tc-mini-rivet br" />
+      <div className="tc-panel-header"><h2>Log Book</h2></div>
+      <div className="tc-panel-inner" style={{ padding: 14 }}>
+        <div className="tc-logbook">
+          <div className="tc-logbook-title">Notas</div>
+          <div className={`tc-logbook-text ${!notes ? 'empty' : ''}`}>
+            {notes || 'Sin notas todavia'}
+          </div>
+          <div style={{ position: 'absolute', right: 6, bottom: 4, fontSize: 22, transform: 'rotate(30deg)', opacity: 0.75, pointerEvents: 'none' }}>
+            &#x270E;
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ─── Save Sync Panel (console wrapper) ───────────────────────────────────────
+
+function SaveSyncPanel({ profileId, profile, canEdit }: { profileId: string; profile: Profile; canEdit: boolean }) {
+  if (!canEdit) return null
+  return (
+    <div className="tc-panel tc-fade-in-up">
+      <span className="tc-mini-rivet tl" /><span className="tc-mini-rivet tr" />
+      <span className="tc-mini-rivet bl" /><span className="tc-mini-rivet br" />
+      <div className="tc-panel-header"><h2>Save Sync</h2></div>
+      <div className="tc-panel-inner">
+        <SaveSyncWidget
+          profileId={profileId}
+          saveSyncedAt={profile.save_synced_at ?? null}
+          saveSyncStatus={profile.save_sync_status ?? 'never'}
+          saveParseError={profile.save_parse_error ?? null}
+        />
+      </div>
+    </div>
+  )
+}
+
+// ─── Page ────────────────────────────────────────────────────────────────────
 
 export default async function ProfilePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -175,121 +298,76 @@ export default async function ProfilePage({ params }: { params: Promise<{ id: st
   const isOwnProfile = currentUser?.id === profile.id
 
   return (
-    <div className="space-y-6 pb-10">
-      <Link href="/" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors">
-        <ChevronLeft className="h-4 w-4"/>Clasificación
-      </Link>
+    <>
+      {/* Scene background */}
+      <div className="tc-scene" />
 
-      <TrainerCardHeader profile={profile} stats={stats} canEdit={canEdit} isOwnProfile={isOwnProfile}/>
+      <div className="relative z-10 pb-10">
+        {/* Console frame — full width */}
+        <div className="trainer-console px-3 pt-2">
+          <div className="tc-console">
+            <span className="tc-rivet tl" /><span className="tc-rivet tr" />
+            <span className="tc-rivet bl" /><span className="tc-rivet br" />
+            <span className="tc-stripes tl" /><span className="tc-stripes tr" />
+            <span className="tc-stripes bl" /><span className="tc-stripes br" />
 
-      {/* Stats row */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <StatCard
-          label="Puntos Totales"
-          value={stats?.total_points ?? 0}
-          sub="en todas las ligas"
-          accent="text-primary"
-          accentBar="bg-gradient-to-r from-primary to-cyan-400"
-        />
-        <StatCard
-          label="Victorias"
-          value={stats?.total_wins ?? 0}
-          accent="text-green-400"
-          accentBar="bg-gradient-to-r from-green-400 to-emerald-500"
-        />
-        <StatCard
-          label="Derrotas"
-          value={stats?.total_losses ?? 0}
-          accent="text-red-400"
-          accentBar="bg-gradient-to-r from-red-400 to-rose-500"
-        />
-        <StatCard
-          label="% Victorias"
-          value={`${Number(stats?.winrate ?? 0).toFixed(1)}%`}
-          sub={(stats?.total_wins ?? 0) + (stats?.total_losses ?? 0) > 0 ? `${(stats?.total_wins ?? 0) + (stats?.total_losses ?? 0)} partidas` : 'Sin partidas aún'}
-          accentBar="bg-gradient-to-r from-primary/70 to-blue-500"
-        />
-      </div>
+            <div className="tc-console-inner">
+              {/* 3-column grid */}
+              <div className="tc-main-grid">
+                {/* LEFT COLUMN */}
+                <div className="tc-col">
+                  <GymBadgesPanel count={profile.badges} canEdit={canEdit} profileId={id} profile={profile} />
+                  <NuzlockeStatsPanel deaths={(profile.graveyard ?? []).length} wipes={profile.wipes} />
+                  {profile.mvp ? (
+                    <MvpPodium
+                      species={profile.mvp}
+                      nickname={profile.team.find(e => e.species === profile.mvp)?.nickname ?? ''}
+                    />
+                  ) : (
+                    <MvpPodiumEmpty />
+                  )}
+                </div>
 
-      {/* Main content */}
-      <div className="grid grid-cols-1 lg:grid-cols-[340px_1fr] gap-4">
+                {/* CENTER COLUMN */}
+                <div className="tc-col tc-col-center">
+                  <TrainerCardConsole profile={profile} stats={stats} canEdit={canEdit} isOwnProfile={isOwnProfile} />
+                  <StatGauges stats={stats} />
+                  {(profile.graveyard ?? []).length > 0 && (
+                    <GraveyardGrid graveyard={profile.graveyard ?? []} />
+                  )}
+                </div>
 
-        {/* Nuzlocke state */}
-        <Card className="self-start overflow-hidden border-border/50">
-          <CardHeader className="pb-3 border-b border-border/40 flex flex-row items-center justify-between gap-2">
-            <CardTitle className="text-sm font-bold">Estado Nuzlocke</CardTitle>
-            {canEdit && (
-              <EditStateDialog
-                profileId={profile.id}
-                initialValues={{ badges: profile.badges, deaths: profile.deaths, wipes: profile.wipes, notes: profile.notes }}
-              />
-            )}
-          </CardHeader>
-
-          <CardContent className="space-y-4 pt-4">
-            <div className="space-y-2">
-              <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.15em]">Medallas de Gimnasio</p>
-              <GymBadges count={profile.badges}/>
-            </div>
-            <Separator className="opacity-30"/>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 text-sm font-semibold">
-                <Skull className="h-4 w-4 text-muted-foreground"/>Muertes
+                {/* RIGHT COLUMN */}
+                <div className="tc-col">
+                  <div className="tc-flex-grow-panel">
+                    <TeamHex
+                      team={profile.team}
+                      canEdit={canEdit}
+                      editButton={
+                        canEdit ? (
+                          <TeamEditDialog
+                            profileId={profile.id}
+                            initialTeam={profile.team}
+                            initialMvp={profile.mvp}
+                          />
+                        ) : undefined
+                      }
+                    />
+                  </div>
+                  <PCStorageGrid box={profile.box} />
+                </div>
               </div>
-              <span className={cn('text-xl font-black tabular-nums', profile.deaths > 0 ? 'text-red-400' : 'text-muted-foreground')}>
-                {profile.deaths}
-              </span>
-            </div>
-            <Separator className="opacity-30"/>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 text-sm font-semibold">
-                <Zap className="h-4 w-4 text-muted-foreground"/>Wipes
-              </div>
-              <span className={cn('text-xl font-black tabular-nums', profile.wipes > 0 ? 'text-orange-400' : 'text-muted-foreground')}>
-                {profile.wipes}
-              </span>
-            </div>
-            <Separator className="opacity-30"/>
-            <div className="space-y-2">
-              <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.15em]">MVP</p>
-              {profile.mvp ? (
-                <MvpCard species={profile.mvp} nickname={profile.team.find((e) => e.species === profile.mvp)?.nickname ?? ''}/>
-              ) : (
-                <MvpEmpty/>
-              )}
-            </div>
-            <Separator className="opacity-30"/>
-            <div className="space-y-1.5">
-              <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.15em]">Notas</p>
-              {profile.notes ? (
-                <p className="text-sm leading-relaxed whitespace-pre-wrap break-words text-foreground/80">{profile.notes}</p>
-              ) : (
-                <p className="text-sm text-muted-foreground/50 italic">Sin notas todavía.</p>
-              )}
-            </div>
-          </CardContent>
-        </Card>
 
-        {/* Team + Box + Save sync */}
-        <div className="space-y-4">
-          <PokemonSection
-            key={profile.save_synced_at ?? 'never'}
-            profileId={profile.id}
-            initialTeam={profile.team}
-            initialBox={profile.box}
-            initialMvp={profile.mvp}
-            canEdit={canEdit}
-          />
-          {canEdit && (
-            <SaveSyncWidget
-              profileId={profile.id}
-              saveSyncedAt={profile.save_synced_at ?? null}
-              saveSyncStatus={profile.save_sync_status ?? 'never'}
-              saveParseError={profile.save_parse_error ?? null}
-            />
-          )}
+              {/* BOTTOM ROW */}
+              <div className="tc-bottom-row">
+                <LogbookPanel notes={profile.notes} />
+                <SaveSyncPanel profileId={id} profile={profile} canEdit={canEdit} />
+              </div>
+            </div>
+          </div>
         </div>
+
       </div>
-    </div>
+    </>
   )
 }

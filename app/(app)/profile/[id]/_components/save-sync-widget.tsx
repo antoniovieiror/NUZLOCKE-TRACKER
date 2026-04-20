@@ -9,8 +9,6 @@ import { syncSaveFile } from '@/lib/actions/save-sync'
 import { loadFileHandle, saveFileHandle, clearFileHandle } from '@/lib/idb-file-handle'
 import type { SaveSyncStatus } from '@/lib/types'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 
 // ─── File System Access API types ────────────────────────────────────────────
@@ -97,7 +95,7 @@ export function SaveSyncWidget({
       } else {
         toast.success(
           `Guardado sincronizado`,
-          { description: `${result.party} en equipo · ${result.box1} en caja` }
+          { description: `${result.party} en equipo · ${result.box1} en caja · ${result.dead} caidos` }
         )
         router.refresh()
       }
@@ -172,32 +170,27 @@ export function SaveSyncWidget({
   // ─── Render ──────────────────────────────────────────────────────────────────
 
   return (
-    <Card className="border-border/50 overflow-hidden">
-      {/* Top accent line — matches profile card style */}
-      <div className="h-0.5 w-full bg-gradient-to-r from-blue-500/40 via-violet-500/30 to-transparent" />
-
-      <CardHeader className="pb-3 border-b border-border/40 flex flex-row items-center justify-between gap-2">
-        <CardTitle className="text-sm font-bold flex items-center gap-2">
-          Sincronización de guardado
-        </CardTitle>
-
-        <div className="flex items-center gap-2">
-          {saveSyncStatus === 'synced' && (
-            <Badge className="gap-1 text-xs bg-green-500/15 text-green-400 border-green-500/20">
-              <CheckCircle className="h-3 w-3" />
-              Sincronizado
-            </Badge>
-          )}
-          {saveSyncStatus === 'failed' && (
-            <Badge className="gap-1 text-xs bg-red-500/15 text-red-400 border-red-500/20">
-              <AlertCircle className="h-3 w-3" />
-              Error
-            </Badge>
-          )}
-        </div>
-      </CardHeader>
-
-      <CardContent className="pt-4 space-y-4">
+    <div className="space-y-4">
+      {/* Status indicator */}
+      <div className="flex items-center gap-3 flex-wrap">
+        {saveSyncStatus === 'synced' && (
+          <div className="tc-save-status synced">
+            <span className="led" />
+            SINCRONIZADO
+          </div>
+        )}
+        {saveSyncStatus === 'failed' && (
+          <div className="tc-save-status error">
+            <span className="led" />
+            ERROR
+          </div>
+        )}
+        {saveSyncStatus === 'never' && (
+          <div className="tc-save-status" style={{ color: '#5d647a', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }}>
+            SIN SINCRONIZAR
+          </div>
+        )}
+      </div>
 
         {/* Last sync info */}
         {saveSyncedAt && (
@@ -316,7 +309,6 @@ export function SaveSyncWidget({
             </p>
           </div>
         )}
-      </CardContent>
-    </Card>
+    </div>
   )
 }

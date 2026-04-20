@@ -441,17 +441,9 @@ export default async function HomePage() {
   const rest = leaderboard.slice(3)
 
   return (
-    /*
-     * Full-bleed breakout trick:
-     * position: relative + left: 50% + translateX(-50%) + width: 100vw
-     * This escapes any max-width container regardless of nesting depth.
-     */
     <div
       style={{
         position: 'relative',
-        left: '50%',
-        transform: 'translateX(-50%)',
-        width: '100vw',
         marginTop: '-2rem',
         overflow: 'hidden',
         minHeight: '92vh',

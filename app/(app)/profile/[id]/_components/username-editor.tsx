@@ -58,11 +58,7 @@ export function UsernameEditor({ profileId, initialUsername, canEdit }: Username
   }
 
   if (!canEdit) {
-    return (
-      <h1 className="text-2xl font-bold tracking-tight truncate">
-        {initialUsername}
-      </h1>
-    )
+    return <h1 className="tc-trainer-name">{initialUsername}</h1>
   }
 
   if (editing) {
@@ -75,17 +71,25 @@ export function UsernameEditor({ profileId, initialUsername, canEdit }: Username
           onKeyDown={handleKeyDown}
           disabled={isPending}
           maxLength={30}
-          className={cn(
-            'text-2xl font-bold tracking-tight bg-transparent border-b-2 border-primary',
-            'focus:outline-none w-full max-w-[220px] pb-0.5',
-            'disabled:opacity-60'
-          )}
+          style={{
+            background: 'rgba(0,200,232,0.08)',
+            border: '1px solid #00c8e8',
+            color: '#fff',
+            fontFamily: "'Rajdhani', sans-serif",
+            fontWeight: 700,
+            fontSize: 30,
+            textAlign: 'center',
+            padding: '2px 8px',
+            borderRadius: 6,
+            outline: 'none',
+            minWidth: 160,
+          }}
         />
         <button
           onClick={save}
           disabled={isPending}
           aria-label="Confirmar nombre"
-          className="text-green-600 hover:text-green-500 disabled:opacity-40 transition-colors"
+          className="text-green-500 hover:text-green-400 disabled:opacity-40 transition-colors"
         >
           {isPending ? (
             <Loader2 className="h-4 w-4 animate-spin" />
@@ -97,7 +101,7 @@ export function UsernameEditor({ profileId, initialUsername, canEdit }: Username
           onClick={cancel}
           disabled={isPending}
           aria-label="Cancelar"
-          className="text-muted-foreground hover:text-foreground disabled:opacity-40 transition-colors"
+          className="text-[#5d647a] hover:text-white disabled:opacity-40 transition-colors"
         >
           <X className="h-4 w-4" />
         </button>
@@ -106,17 +110,10 @@ export function UsernameEditor({ profileId, initialUsername, canEdit }: Username
   }
 
   return (
-    <div className="flex items-center gap-1.5 group/username">
-      <h1 className="text-2xl font-bold tracking-tight truncate">
+    <div className="flex items-center gap-1.5 group/username cursor-pointer" onClick={startEditing}>
+      <h1 className="tc-trainer-name" title="Click para editar">
         {initialUsername}
       </h1>
-      <button
-        onClick={startEditing}
-        aria-label="Editar nombre"
-        className="opacity-0 group-hover/username:opacity-100 transition-opacity p-1 rounded-md hover:bg-muted"
-      >
-        <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
-      </button>
     </div>
   )
 }

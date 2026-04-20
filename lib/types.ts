@@ -20,6 +20,7 @@ export interface Profile {
   wipes: number
   team: PokemonEntry[]
   box: PokemonEntry[]
+  graveyard: PokemonEntry[]
   mvp: string | null
   notes: string | null
   avatar_url: string | null

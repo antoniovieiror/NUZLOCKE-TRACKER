@@ -23,7 +23,6 @@ import { Textarea } from '@/components/ui/textarea'
 
 const schema = z.object({
   badges: z.number().int().min(0).max(12),
-  deaths: z.number().int().min(0),
   wipes: z.number().int().min(0),
   notes: z.string().max(1000),
 })
@@ -34,7 +33,6 @@ interface Props {
   profileId: string
   initialValues: {
     badges: number
-    deaths: number
     wipes: number
     notes: string | null
   }
@@ -53,7 +51,6 @@ export function EditStateDialog({ profileId, initialValues }: Props) {
     resolver: zodResolver(schema),
     defaultValues: {
       badges: initialValues.badges,
-      deaths: initialValues.deaths,
       wipes: initialValues.wipes,
       notes: initialValues.notes ?? '',
     },
@@ -63,7 +60,6 @@ export function EditStateDialog({ profileId, initialValues }: Props) {
     if (!next) {
       reset({
         badges: initialValues.badges,
-        deaths: initialValues.deaths,
         wipes: initialValues.wipes,
         notes: initialValues.notes ?? '',
       })
@@ -86,29 +82,26 @@ export function EditStateDialog({ profileId, initialValues }: Props) {
 
   return (
     <>
-      <Button
-        variant="outline"
-        size="sm"
-        className="gap-1.5"
+      <button
+        className="tc-btn-edit"
         onClick={() => setOpen(true)}
       >
-        <Pencil className="h-3.5 w-3.5" />
         Editar
-      </Button>
+      </button>
 
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Editar estado Nuzlocke</DialogTitle>
             <DialogDescription>
-              Actualiza medallas, muertes, wipes y notas de tu partida.
-              El MVP se selecciona directamente desde el equipo.
+              Actualiza medallas, wipes y notas de tu partida.
+              El MVP se selecciona desde el equipo. Las muertes se detectan automaticamente.
             </DialogDescription>
           </DialogHeader>
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 py-2">
-            {/* Badges / Deaths / Wipes */}
-            <div className="grid grid-cols-3 gap-3">
+            {/* Badges / Wipes */}
+            <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
                 <Label htmlFor="badges">Medallas</Label>
                 <Input
@@ -121,20 +114,6 @@ export function EditStateDialog({ profileId, initialValues }: Props) {
                 />
                 {errors.badges && (
                   <p className="text-xs text-destructive">{errors.badges.message}</p>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="deaths">Muertes</Label>
-                <Input
-                  id="deaths"
-                  type="number"
-                  min={0}
-                  {...register('deaths', { valueAsNumber: true })}
-                  aria-invalid={!!errors.deaths}
-                />
-                {errors.deaths && (
-                  <p className="text-xs text-destructive">{errors.deaths.message}</p>
                 )}
               </div>
 
@@ -152,6 +131,7 @@ export function EditStateDialog({ profileId, initialValues }: Props) {
                 )}
               </div>
             </div>
+            <p className="text-xs text-muted-foreground">Las muertes se calculan automaticamente desde el cementerio (cajas 15-36).</p>
 
             {/* Notes */}
             <div className="space-y-2">

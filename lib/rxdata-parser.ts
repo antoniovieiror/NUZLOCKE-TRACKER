@@ -23,6 +23,7 @@ export interface ParsedPokemon {
 export interface ParsedSaveData {
   party: ParsedPokemon[]
   box1: ParsedPokemon[]
+  graveyard: ParsedPokemon[]
   badgeCount: number
 }
 
@@ -262,6 +263,34 @@ function extractBox1(storage: MarshalObject): ParsedPokemon[] {
   })
 }
 
+function extractBoxRange(storage: MarshalObject, startIndex: number, endIndex: number): ParsedPokemon[] {
+  const boxes = storage.ivars['@boxes']
+  if (!Array.isArray(boxes)) return []
+
+  const result: ParsedPokemon[] = []
+
+  for (let i = startIndex; i <= endIndex && i < boxes.length; i++) {
+    const box = boxes[i]
+    let slots: MarshalValue[]
+
+    if (Array.isArray(box)) {
+      slots = box
+    } else if (isMarshalObject(box)) {
+      const pkmn = box.ivars['@pokemon']
+      slots = Array.isArray(pkmn) ? pkmn : []
+    } else {
+      continue
+    }
+
+    for (const slot of slots) {
+      const p = toPokemon(slot)
+      if (p) result.push(p)
+    }
+  }
+
+  return result
+}
+
 // ─── Main entry point ─────────────────────────────────────────────────────────
 
 export function parseRxdata(buffer: ArrayBuffer): ParsedSaveData {
@@ -345,7 +374,11 @@ export function parseRxdata(buffer: ArrayBuffer): ParsedSaveData {
 
   const box1 = foundStorage ? extractBox1(foundStorage) : []
 
-  return { party, box1, badgeCount }
+  // ── Extract Graveyard (boxes 15–36, indices 14–35) ────────────────────────
+
+  const graveyard = foundStorage ? extractBoxRange(foundStorage as MarshalObject, 14, 35) : []
+
+  return { party, box1, graveyard, badgeCount }
 }
 
 // ─── Species name normalizer (symbol-style IDs, if ever needed) ──────────────

@@ -7,7 +7,7 @@ import { parseRxdata, RxdataParseError } from '@/lib/rxdata-parser'
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export type SyncResult =
-  | { success: true; party: number; box1: number }
+  | { success: true; party: number; box1: number; dead: number }
   | { success: false; error: string }
 
 // ─── Auth guard (reuse same pattern as profile.ts) ────────────────────────────
@@ -96,7 +96,7 @@ export async function syncSaveFile(profileId: string, formData: FormData): Promi
     }
   }
 
-  const [teamEntries, boxEntries] = await Promise.all([
+  const [teamEntries, boxEntries, graveyardEntries] = await Promise.all([
     Promise.all(
       parsed.party.slice(0, 6).map(async (p) => ({
         species: await resolveSpecies(p.speciesId),
@@ -109,18 +109,27 @@ export async function syncSaveFile(profileId: string, formData: FormData): Promi
         nickname: p.nickname,
       }))
     ),
+    Promise.all(
+      parsed.graveyard.map(async (p) => ({
+        species: await resolveSpecies(p.speciesId),
+        nickname: p.nickname,
+      }))
+    ),
   ])
 
   // ── Persist ──────────────────────────────────────────────────────────────────
 
   const team = teamEntries
   const box = boxEntries
+  const graveyard = graveyardEntries
 
   const { error: dbError } = await supabase!
     .from('profiles')
     .update({
       team,
       box,
+      graveyard,
+      deaths: graveyard.length,
       save_sync_status: 'synced',
       save_parse_error: null,
       save_synced_at: new Date().toISOString(),
@@ -132,5 +141,5 @@ export async function syncSaveFile(profileId: string, formData: FormData): Promi
   }
 
   revalidatePath(`/profile/${profileId}`)
-  return { success: true, party: team.length, box1: boxEntries.length }
+  return { success: true, party: team.length, box1: boxEntries.length, dead: graveyard.length }
 }
