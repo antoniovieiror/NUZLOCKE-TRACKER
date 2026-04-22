@@ -2,7 +2,6 @@
 
 # Requirements and Architecture Specification: Nuzlocke Tracker Web App
 
-
 ## 1. Product Vision
 A closed web application to manage a Pokémon Nuzlocke tournament among a group of 5 friends. The app does not integrate with the game ROM; all state management is strictly manual. Its main function is to maintain a global classification (Leaderboard) based on periodic "leagues" (round-robin tournaments) played on Pokémon Showdown. It also serves as a hub where each player can showcase their current run status (team, badges, death counter).
 
@@ -61,17 +60,3 @@ A closed web application to manage a Pokémon Nuzlocke tournament among a group 
 3. Next, generate the Next.js project scaffolding and the key UI components using Tailwind CSS and shadcn/ui.
 4. Prioritize a premium, responsive UI/UX.
 5. Do not assume or build complex features outside of this scope (e.g., do not add email password recovery or automated game state integrations). Stick strictly to the manual management described.
-
-## 8. Screenshot Workflow
-* `screenshot.mjs` lives in the project root. Run it with: `node screenshot.mjs http://localhost:3000` (or with an optional label: `node screenshot.mjs http://localhost:3000 label`).
-* Screenshots are saved to `./temporary screenshots/screenshot-N.png` (auto-incremented, never overwritten). With a label: `screenshot-N-label.png`.
-* **After every UI change, take a screenshot and read the PNG using the Read tool** — Claude can see and analyze it directly.
-* When comparing screenshots, be specific: "heading is 32px but reference shows ~24px", "card gap is 16px but should be 24px".
-* Always check: spacing/padding, font size/weight/line-height, colors (exact hex), alignment, border-radius, shadows, image sizing.
-* Do NOT mark any UI task as complete without first taking a screenshot and reviewing it.
-
-
-## 9. Mandatory Skill Invocations
-* **Frontend code:** ALWAYS invoke the `frontend-design` skill (via the Skill tool with `skill: "frontend-design"`) BEFORE writing any frontend code — components, pages, layouts, or UI changes of any kind. Do not skip this step even for small changes.
-* **Image generation:** ALWAYS invoke the `nano-banana` skill (via the Skill tool with `skill: "nano-banana:generate"`) BEFORE generating any images. Do not skip this step.
-* **Screenshot review:** After any UI change, run `node screenshot.mjs http://localhost:3000` and read the resulting PNG with the Read tool before reporting the task as done.
