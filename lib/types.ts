@@ -37,6 +37,7 @@ export interface League {
   status: LeagueStatus
   created_at: string
   closed_at: string | null
+  active_match_id: string | null
 }
 
 export interface Match {
@@ -51,6 +52,11 @@ export interface Match {
   replay_url: string | null
   created_at: string
   updated_at: string
+  team_a_snapshot: PokemonEntry[] | null
+  team_b_snapshot: PokemonEntry[] | null
+  mvp_a_snapshot: string | null
+  mvp_b_snapshot: string | null
+  activated_at: string | null
 }
 
 export interface LeaderboardEntry {

@@ -1,18 +1,28 @@
 import Link from 'next/link'
-import { Trophy, Calendar, Swords, Crown, CheckCircle2, Ban, Shield } from 'lucide-react'
+import {
+  Trophy,
+  Crown,
+  Calendar,
+  Ban,
+  Shield,
+  Clock,
+  Swords,
+  Users,
+  Medal,
+  Flame,
+  ScrollText,
+  ChevronDown,
+  Archive,
+} from 'lucide-react'
 
 import { createClient } from '@/lib/supabase/server'
-import { cn } from '@/lib/utils'
 import type { League, Match, Profile } from '@/lib/types'
 
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Separator } from '@/components/ui/separator'
-import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
-} from '@/components/ui/table'
+import './history.css'
 
-// ─── Standings computation ────────────────────────────────────────────────────
+// ═════════════════════════════════════════════════════════════════
+// Types + helpers
+// ═════════════════════════════════════════════════════════════════
 
 type PlayerRow = {
   id: string
@@ -25,20 +35,88 @@ type PlayerRow = {
   matchesPlayed: number
 }
 
-function computeStandings(
-  matches: Match[],
-  profiles: Pick<Profile, 'id' | 'username' | 'avatar_url'>[]
-): PlayerRow[] {
+type SlimProfile = Pick<Profile, 'id' | 'username' | 'avatar_url'>
+
+function initials(name: string) {
+  return name.trim().slice(0, 2).toUpperCase()
+}
+
+function AvatarImg({
+  url,
+  username,
+  className,
+}: {
+  url: string | null | undefined
+  username: string
+  className?: string
+}) {
+  if (url) {
+    // eslint-disable-next-line @next/next/no-img-element
+    return <img src={url} alt={username} className={className} />
+  }
+  return <span className="fallback">{initials(username)}</span>
+}
+
+// Inline SVG laurel branch — drawn as a single right-leaning half so we can
+// mirror it via CSS `scaleX(-1)` for the left side of each medallion.
+function LaurelHalf({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 22 54"
+      xmlns="http://www.w3.org/2000/svg"
+      aria-hidden
+    >
+      <g fill="currentColor">
+        <path
+          d="M11 2 C 10 15 10 30 10 52"
+          stroke="currentColor"
+          strokeWidth="1"
+          fill="none"
+          opacity="0.55"
+        />
+        <ellipse cx="7" cy="8" rx="4.5" ry="2" transform="rotate(-45 7 8)" />
+        <ellipse cx="5" cy="16" rx="5.5" ry="2.2" transform="rotate(-32 5 16)" />
+        <ellipse cx="4" cy="25" rx="6" ry="2.4" transform="rotate(-20 4 25)" />
+        <ellipse cx="4" cy="34" rx="6" ry="2.4" transform="rotate(-10 4 34)" />
+        <ellipse cx="5" cy="42" rx="5.5" ry="2.2" transform="rotate(-2 5 42)" />
+        <ellipse cx="7" cy="49" rx="4.5" ry="2" transform="rotate(8 7 49)" />
+      </g>
+    </svg>
+  )
+}
+
+// Tiny filled star used in the multi-title badge.
+function StarDot({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 10 10"
+      xmlns="http://www.w3.org/2000/svg"
+      aria-hidden
+    >
+      <path d="M5 0.6 L6.2 3.6 L9.4 3.9 L7 6 L7.7 9.2 L5 7.5 L2.3 9.2 L3 6 L0.6 3.9 L3.8 3.6 Z" />
+    </svg>
+  )
+}
+
+function computeStandings(matches: Match[], profiles: SlimProfile[]): PlayerRow[] {
   const map = new Map<string, PlayerRow>()
   for (const p of profiles) {
     map.set(p.id, {
-      id: p.id, username: p.username, avatar_url: p.avatar_url,
-      points: 0, wins: 0, losses: 0, winrate: 0, matchesPlayed: 0,
+      id: p.id,
+      username: p.username,
+      avatar_url: p.avatar_url,
+      points: 0,
+      wins: 0,
+      losses: 0,
+      winrate: 0,
+      matchesPlayed: 0,
     })
   }
 
   const resolved = matches.filter(
-    (m) => m.status === 'validated' || m.status === 'admin_resolved'
+    (m) => m.status === 'validated' || m.status === 'admin_resolved',
   )
 
   for (const m of resolved) {
@@ -46,8 +124,15 @@ function computeStandings(
     const loserId = m.winner_id === m.player_a_id ? m.player_b_id : m.player_a_id
     const winner = map.get(m.winner_id)
     const loser = map.get(loserId)
-    if (winner) { winner.points += 2; winner.wins += 1; winner.matchesPlayed += 1 }
-    if (loser) { loser.losses += 1; loser.matchesPlayed += 1 }
+    if (winner) {
+      winner.points += 2
+      winner.wins += 1
+      winner.matchesPlayed += 1
+    }
+    if (loser) {
+      loser.losses += 1
+      loser.matchesPlayed += 1
+    }
   }
 
   for (const row of map.values()) {
@@ -65,398 +150,674 @@ function computeStandings(
   })
 }
 
-// ─── Rank pill ────────────────────────────────────────────────────────────────
+function toRoman(n: number): string {
+  if (n <= 0) return ''
+  const map: [number, string][] = [
+    [1000, 'M'], [900, 'CM'], [500, 'D'], [400, 'CD'],
+    [100, 'C'], [90, 'XC'], [50, 'L'], [40, 'XL'],
+    [10, 'X'], [9, 'IX'], [5, 'V'], [4, 'IV'], [1, 'I'],
+  ]
+  let out = ''
+  let x = n
+  for (const [v, s] of map) {
+    while (x >= v) { out += s; x -= v }
+  }
+  return out
+}
 
-function HistoryRank({ rank }: { rank: number }) {
-  if (rank === 1)
-    return (
-      <span className="inline-flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-black bg-gradient-to-br from-amber-300 to-amber-500 text-amber-950">
-        1
-      </span>
-    )
-  if (rank === 2)
-    return (
-      <span className="inline-flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-black bg-gradient-to-br from-slate-400 to-slate-500 text-slate-100">
-        2
-      </span>
-    )
-  if (rank === 3)
-    return (
-      <span className="inline-flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-black bg-gradient-to-br from-orange-600 to-amber-700 text-orange-100">
-        3
-      </span>
-    )
+function durationDays(start: string, end: string | null): number | null {
+  if (!end) return null
+  const ms = new Date(end).getTime() - new Date(start).getTime()
+  return Math.round(ms / (1000 * 60 * 60 * 24))
+}
+
+function formatDuration(days: number | null): string {
+  if (days === null) return '—'
+  if (days < 7) return `${days} día${days === 1 ? '' : 's'}`
+  const weeks = Math.round(days / 7)
+  if (weeks < 5) return `${weeks} sem`
+  return `${Math.round(days / 30)} mes`
+}
+
+function formatClosedDate(iso: string | null): string {
+  if (!iso) return '—'
+  return new Date(iso).toLocaleDateString('es-ES', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  })
+}
+
+// ═════════════════════════════════════════════════════════════════
+// Hero
+// ═════════════════════════════════════════════════════════════════
+
+function HistoryHero({ totalSeasons }: { totalSeasons: number }) {
   return (
-    <span className="text-xs text-muted-foreground tabular-nums font-medium w-5 text-center">
-      {rank}
-    </span>
+    <div className="hc-hero hc-fade-up">
+      <span className="hc-hero-corner tl" />
+      <span className="hc-hero-corner tr" />
+      <span className="hc-hero-corner bl" />
+      <span className="hc-hero-corner br" />
+
+      <div className="hc-hero-emblem">
+        <div className="hc-hero-emblem-laurel" />
+        <div className="hc-hero-emblem-ring" />
+        <div className="hc-hero-emblem-core">
+          <Trophy strokeWidth={1.6} />
+        </div>
+      </div>
+
+      <div className="hc-hero-text">
+        <p className="hc-hero-kicker">Archivo Oficial · Registro Eterno</p>
+        <h1 className="hc-hero-title">
+          Hall of <span className="accent">Champions</span>
+        </h1>
+        <p className="hc-hero-subtitle">
+          Temporadas selladas. Honores grabados. Leyendas que permanecen.
+        </p>
+      </div>
+
+      <div className="hc-hero-counter">
+        <div className="hc-hero-counter-num">
+          {String(totalSeasons).padStart(2, '0')}
+        </div>
+        <div className="hc-hero-counter-label">
+          {totalSeasons === 1 ? 'Temporada' : 'Temporadas'}
+        </div>
+      </div>
+    </div>
   )
 }
 
-// ─── Duration helper ──────────────────────────────────────────────────────────
+// ═════════════════════════════════════════════════════════════════
+// Champions shelf
+// ═════════════════════════════════════════════════════════════════
 
-function duration(start: string, end: string | null): string {
-  if (!end) return '—'
-  const ms = new Date(end).getTime() - new Date(start).getTime()
-  const days = Math.round(ms / (1000 * 60 * 60 * 24))
-  if (days < 7) return `${days}d`
-  const weeks = Math.round(days / 7)
-  if (weeks < 5) return `${weeks}sem`
-  return `${Math.round(days / 30)}mes`
+function ChampionsShelf({
+  entries,
+  championCounts,
+}: {
+  entries: { leagueId: string; league: League; champion: PlayerRow; seasonNum: number }[]
+  championCounts: Map<string, number>
+}) {
+  if (entries.length === 0) return null
+  return (
+    <div>
+      <div className="hc-section-head">
+        <span className="hc-section-head-label">
+          <Crown /> Galería de Campeones
+        </span>
+      </div>
+      <div className="hc-shelf-wrap hc-fade-up">
+        <div className="hc-shelf">
+          {entries.map(({ leagueId, champion, seasonNum }) => {
+            const titles = championCounts.get(champion.id) ?? 1
+            return (
+              <Link
+                key={leagueId}
+                href={`#season-${leagueId}`}
+                className="hc-medal"
+              >
+                <div className="hc-medal-crest">
+                  <LaurelHalf className="hc-medal-laurel left" />
+                  <LaurelHalf className="hc-medal-laurel right" />
+                  <div className="hc-medal-ring">
+                    <AvatarImg url={champion.avatar_url} username={champion.username} />
+                  </div>
+                  {titles > 1 && (
+                    <span
+                      className="hc-medal-titles"
+                      title={`${titles} títulos`}
+                    >
+                      <StarDot />×{titles}
+                    </span>
+                  )}
+                </div>
+                <span className="hc-medal-name">{champion.username}</span>
+                <span className="hc-medal-plaque">
+                  Temp
+                  <span className="hc-medal-plaque-roman">{toRoman(seasonNum)}</span>
+                </span>
+              </Link>
+            )
+          })}
+        </div>
+      </div>
+    </div>
+  )
 }
 
-// ─── Match result row ─────────────────────────────────────────────────────────
+// ═════════════════════════════════════════════════════════════════
+// Legacy stats
+// ═════════════════════════════════════════════════════════════════
 
-function MatchResultRow({
+type LegacyStats = {
+  totalSeasons: number
+  totalMatchesResolved: number
+  totalMatchesVoided: number
+  avgDurationDays: number | null
+  dominantChampion: { profile: SlimProfile; titles: number } | null
+  mostActive: { profile: SlimProfile; matches: number } | null
+}
+
+function LegacyStrip({ stats }: { stats: LegacyStats }) {
+  return (
+    <div>
+      <div className="hc-section-head">
+        <span className="hc-section-head-label">
+          <Archive /> Registro Eterno
+        </span>
+      </div>
+
+      <div className="hc-legacy hc-fade-up">
+        {stats.dominantChampion ? (
+          <Link
+            href={`/profile/${stats.dominantChampion.profile.id}`}
+            className="hc-legacy-feature"
+            style={{ textDecoration: 'none', color: 'inherit' }}
+          >
+            <div className="hc-legacy-feature-portrait">
+              <span className="hc-legacy-feature-badge">
+                <Crown strokeWidth={2} />
+              </span>
+              <AvatarImg
+                url={stats.dominantChampion.profile.avatar_url}
+                username={stats.dominantChampion.profile.username}
+              />
+            </div>
+            <div className="hc-legacy-feature-body">
+              <span className="hc-legacy-feature-kicker">
+                Campeón absoluto
+              </span>
+              <span className="hc-legacy-feature-name">
+                {stats.dominantChampion.profile.username}
+              </span>
+              <span className="hc-legacy-feature-meta">
+                <strong>{stats.dominantChampion.titles}</strong>{' '}
+                {stats.dominantChampion.titles === 1 ? 'título' : 'títulos'}
+              </span>
+            </div>
+          </Link>
+        ) : (
+          <div className="hc-legacy-card">
+            <span className="hc-legacy-card-label">
+              <Crown /> Campeón absoluto
+            </span>
+            <div className="hc-legacy-card-value">—</div>
+            <p className="hc-legacy-card-sub">Aún sin corona</p>
+          </div>
+        )}
+
+        {stats.mostActive ? (
+          <Link
+            href={`/profile/${stats.mostActive.profile.id}`}
+            className="hc-legacy-feature cyan"
+            style={{ textDecoration: 'none', color: 'inherit' }}
+          >
+            <div className="hc-legacy-feature-portrait">
+              <span className="hc-legacy-feature-badge">
+                <Flame strokeWidth={2} />
+              </span>
+              <AvatarImg
+                url={stats.mostActive.profile.avatar_url}
+                username={stats.mostActive.profile.username}
+              />
+            </div>
+            <div className="hc-legacy-feature-body">
+              <span className="hc-legacy-feature-kicker">Más activo</span>
+              <span className="hc-legacy-feature-name">
+                {stats.mostActive.profile.username}
+              </span>
+              <span className="hc-legacy-feature-meta">
+                <strong>{stats.mostActive.matches}</strong> combates disputados
+              </span>
+            </div>
+          </Link>
+        ) : (
+          <div className="hc-legacy-card">
+            <span className="hc-legacy-card-label">
+              <Flame /> Más activo
+            </span>
+            <div className="hc-legacy-card-value">—</div>
+            <p className="hc-legacy-card-sub">Sin datos</p>
+          </div>
+        )}
+
+        <div className="hc-legacy-card">
+          <span className="hc-legacy-card-label">
+            <Swords /> Combates resueltos
+          </span>
+          <div className="hc-legacy-card-value">{stats.totalMatchesResolved}</div>
+          <p className="hc-legacy-card-sub">
+            {stats.totalMatchesVoided > 0
+              ? `${stats.totalMatchesVoided} anulados`
+              : 'sin anulaciones'}
+          </p>
+        </div>
+
+        <div className="hc-legacy-card">
+          <span className="hc-legacy-card-label">
+            <Clock /> Duración media
+          </span>
+          <div className="hc-legacy-card-value">
+            {stats.avgDurationDays === null
+              ? '—'
+              : formatDuration(stats.avgDurationDays)}
+          </div>
+          <p className="hc-legacy-card-sub">por temporada</p>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ═════════════════════════════════════════════════════════════════
+// Match result card
+// ═════════════════════════════════════════════════════════════════
+
+type MatchGroup = 'resolved' | 'voided' | 'pending'
+
+function groupMatches(matches: Match[]): Record<MatchGroup, Match[]> {
+  const out: Record<MatchGroup, Match[]> = {
+    resolved: [],
+    voided: [],
+    pending: [],
+  }
+  for (const m of matches) {
+    if (m.status === 'validated' || m.status === 'admin_resolved') {
+      out.resolved.push(m)
+    } else if (m.status === 'voided') {
+      out.voided.push(m)
+    } else {
+      out.pending.push(m)
+    }
+  }
+  return out
+}
+
+function MatchResult({
   match,
+  index,
   profileMap,
 }: {
   match: Match
-  profileMap: Map<string, Pick<Profile, 'id' | 'username' | 'avatar_url'>>
+  index: number
+  profileMap: Map<string, SlimProfile>
 }) {
   const pA = profileMap.get(match.player_a_id)
   const pB = profileMap.get(match.player_b_id)
   if (!pA || !pB) return null
 
   const isVoided = match.status === 'voided'
-  const isResolved = match.status === 'validated' || match.status === 'admin_resolved'
-  const winnerId = match.winner_id
-  const winner = winnerId ? profileMap.get(winnerId) : null
-  const loser = winner?.id === pA.id ? pB : pA
+  const isResolved =
+    match.status === 'validated' || match.status === 'admin_resolved'
+  const winnerIsA = isResolved && match.winner_id === pA.id
+  const winnerIsB = isResolved && match.winner_id === pB.id
+
+  const classes = ['hc-match']
+  if (winnerIsA) classes.push('win-a')
+  else if (winnerIsB) classes.push('win-b')
+  else if (isVoided) classes.push('void')
+  else classes.push('pending')
+
+  const nameClassA = isVoided
+    ? 'hc-match-name void'
+    : winnerIsA
+    ? 'hc-match-name winner'
+    : winnerIsB
+    ? 'hc-match-name loser'
+    : 'hc-match-name'
+  const nameClassB = isVoided
+    ? 'hc-match-name void'
+    : winnerIsB
+    ? 'hc-match-name winner'
+    : winnerIsA
+    ? 'hc-match-name loser'
+    : 'hc-match-name'
+  const faceClassA = isVoided
+    ? 'hc-match-face void'
+    : winnerIsA
+    ? 'hc-match-face winner'
+    : 'hc-match-face'
+  const faceClassB = isVoided
+    ? 'hc-match-face void'
+    : winnerIsB
+    ? 'hc-match-face winner'
+    : 'hc-match-face'
+
+  const midClass = isVoided
+    ? 'hc-match-mid void'
+    : isResolved
+    ? 'hc-match-mid win'
+    : 'hc-match-mid pending'
+  const MidIcon = isVoided ? Ban : isResolved ? Trophy : Swords
 
   return (
-    <Link
-      href={`/match/${match.id}`}
-      className="flex items-center gap-2 py-1.5 px-2 rounded-lg hover:bg-muted/40 transition-colors group"
-    >
-      {isVoided ? (
-        <>
-          <Ban className="h-3 w-3 text-muted-foreground/50 shrink-0" />
-          <span className="text-xs text-muted-foreground/50 line-through">
-            {pA.username} vs {pB.username}
-          </span>
-          <span className="ml-auto text-[10px] text-muted-foreground/40 font-semibold">ANULADO</span>
-        </>
-      ) : isResolved && winner && loser ? (
-        <>
-          <CheckCircle2 className="h-3 w-3 text-green-400 shrink-0" />
-          <span className="text-xs">
-            <span className="font-bold text-green-400">{winner.username}</span>
-            <span className="text-muted-foreground/60 mx-1.5 text-[11px]">def.</span>
-            <span className="text-muted-foreground">{loser.username}</span>
-          </span>
-          {match.status === 'admin_resolved' && (
-            <span title="Admin resolved" className="ml-auto">
-              <Shield className="h-3 w-3 text-primary/70 shrink-0" />
-            </span>
-          )}
-        </>
-      ) : (
-        <>
-          <span className="h-3 w-3 rounded-full border border-muted-foreground/30 shrink-0" />
-          <span className="text-xs text-muted-foreground">
-            {pA.username} vs {pB.username}
-          </span>
-          <span className="ml-auto text-[10px] text-primary/70 font-semibold">PENDIENTE</span>
-        </>
+    <Link href={`/match/${match.id}`} className={classes.join(' ')}>
+      <span className="hc-match-idx">{String(index).padStart(2, '0')}</span>
+      <div className="hc-match-body">
+        <div className="hc-match-side">
+          <div className={faceClassA}>
+            <AvatarImg url={pA.avatar_url} username={pA.username} />
+          </div>
+          <span className={nameClassA}>{pA.username}</span>
+        </div>
+        <span className={midClass}>
+          <MidIcon strokeWidth={2} />
+        </span>
+        <div className="hc-match-side right">
+          <div className={faceClassB}>
+            <AvatarImg url={pB.avatar_url} username={pB.username} />
+          </div>
+          <span className={nameClassB}>{pB.username}</span>
+        </div>
+      </div>
+      {match.status === 'admin_resolved' && (
+        <span className="hc-match-flag admin">
+          <Shield strokeWidth={2.2} />
+          Admin
+        </span>
+      )}
+      {isVoided && (
+        <span className="hc-match-flag void">
+          <Ban strokeWidth={2.2} />
+          Anulado
+        </span>
+      )}
+      {!isVoided && !isResolved && (
+        <span className="hc-match-flag pending">
+          <Clock strokeWidth={2.2} />
+          Pendiente
+        </span>
       )}
     </Link>
   )
 }
 
-// ─── Champion showcase ────────────────────────────────────────────────────────
+// ═════════════════════════════════════════════════════════════════
+// Season capsule
+// ═════════════════════════════════════════════════════════════════
 
-function ChampionBanner({ champion }: { champion: PlayerRow }) {
-  return (
-    <div className="relative overflow-hidden rounded-xl border border-amber-700/40 bg-gradient-to-b from-amber-950/30 to-card shadow-lg shadow-amber-900/20 p-5">
-      <div className="h-0.5 absolute top-0 inset-x-0 bg-gradient-to-r from-transparent via-amber-400/60 to-transparent" />
-      <Trophy className="absolute -right-2 -top-2 h-20 w-20 text-amber-600/12 rotate-12 pointer-events-none" />
-
-      <p className="text-[10px] font-black text-amber-400 uppercase tracking-[0.18em] mb-4 flex items-center gap-1.5">
-        <Crown className="h-3 w-3 fill-amber-400" strokeWidth={0} />
-        Campeón de temporada
-      </p>
-
-      <div className="flex items-center gap-4">
-        <Link href={`/profile/${champion.id}`} className="shrink-0 group">
-          <div className="relative">
-            <Avatar className="h-14 w-14 ring-2 ring-amber-600/40 shadow-md shadow-amber-800/30 transition-transform duration-200 group-hover:scale-105 rank-glow-gold">
-              <AvatarImage src={champion.avatar_url ?? undefined} />
-              <AvatarFallback className="text-lg font-black bg-gradient-to-br from-amber-900 to-yellow-900 text-amber-200">
-                {champion.username.slice(0, 2).toUpperCase()}
-              </AvatarFallback>
-            </Avatar>
-            <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-              <Crown className="h-4 w-4 text-amber-400 fill-amber-400" strokeWidth={1} />
-            </div>
-          </div>
-        </Link>
-
-        <div className="min-w-0">
-          <Link
-            href={`/profile/${champion.id}`}
-            className="font-black text-lg leading-tight text-amber-200 hover:underline underline-offset-4 truncate block tracking-tight"
-          >
-            {champion.username}
-          </Link>
-          <div className="flex items-center gap-4 mt-1">
-            <span className="text-2xl font-black tabular-nums text-amber-400 leading-none">
-              {champion.points}
-              <span className="text-xs font-normal ml-0.5 text-amber-500/70">pts</span>
-            </span>
-            <div className="text-xs space-y-0.5">
-              <p>
-                <span className="text-green-400 font-bold">{champion.wins}V</span>
-                {' '}
-                <span className="text-red-400 font-bold">{champion.losses}D</span>
-              </p>
-              <p className="text-muted-foreground">{champion.winrate.toFixed(1)}% winrate</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-// ─── League card ──────────────────────────────────────────────────────────────
-
-function LeagueCard({
-  league, standings, matches, profileMap,
+function SeasonCapsule({
+  league,
+  seasonNum,
+  standings,
+  matches,
+  profileMap,
 }: {
   league: League
+  seasonNum: number
   standings: PlayerRow[]
   matches: Match[]
-  profileMap: Map<string, Pick<Profile, 'id' | 'username' | 'avatar_url'>>
+  profileMap: Map<string, SlimProfile>
 }) {
   const champion = standings[0] ?? null
-  const totalMatches = matches.length
+  const top3 = standings.slice(0, 3)
+
   const resolvedMatches = matches.filter(
-    (m) => m.status === 'validated' || m.status === 'admin_resolved'
+    (m) => m.status === 'validated' || m.status === 'admin_resolved',
   ).length
   const voidedMatches = matches.filter((m) => m.status === 'voided').length
+  const totalMatches = matches.length
 
-  const sortedMatches = [...matches].sort((a, b) => {
-    const order = { validated: 0, admin_resolved: 1, pending: 2, disputed: 3, voided: 4 }
-    return (order[a.status] ?? 5) - (order[b.status] ?? 5)
-  })
+  const dur = durationDays(league.created_at, league.closed_at)
+  const closed = formatClosedDate(league.closed_at)
 
-  const dur = duration(league.created_at, league.closed_at)
-  const closedDate = league.closed_at
-    ? new Date(league.closed_at).toLocaleDateString('es-ES', { month: 'long', day: 'numeric', year: 'numeric' })
-    : '—'
+  const grouped = groupMatches(matches)
+  const matchIndex = new Map<string, number>()
+  matches.forEach((m, i) => matchIndex.set(m.id, i + 1))
 
   return (
-    <section className="space-y-4">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-muted/40 shrink-0 border border-border/50">
-            <Swords className="h-5 w-5 text-muted-foreground" strokeWidth={1.5} />
+    <article id={`season-${league.id}`} className="hc-capsule hc-fade-up">
+      <span className="hc-capsule-corner tl" />
+      <span className="hc-capsule-corner tr" />
+      <span className="hc-capsule-corner bl" />
+      <span className="hc-capsule-corner br" />
+
+      <div className="hc-seal">
+        <div className="hc-seal-wax" />
+        <div className="hc-seal-inner">
+          <span className="hc-seal-roman">{toRoman(seasonNum)}</span>
+        </div>
+        <span className="hc-seal-grade">Temporada</span>
+      </div>
+
+      <div className="hc-capsule-body">
+        <header className="hc-capsule-head">
+          <h2 className="hc-capsule-title">{league.title}</h2>
+          <div className="hc-capsule-meta">
+            <span className="hc-capsule-meta-item">
+              <Calendar /> Cerrada el <strong>{closed}</strong>
+            </span>
+            <span className="hc-capsule-meta-item">
+              <Clock /> <strong>{formatDuration(dur)}</strong>
+            </span>
+            <span className="hc-capsule-meta-item">
+              <Swords /> <strong>{resolvedMatches}</strong> / {totalMatches} combates
+            </span>
+            {voidedMatches > 0 && (
+              <span className="hc-capsule-meta-item">
+                <Ban /> <strong>{voidedMatches}</strong> anulados
+              </span>
+            )}
+            <span className="hc-capsule-meta-item">
+              <Users /> <strong>{standings.length}</strong> entrenadores
+            </span>
           </div>
-          <div>
-            <h2 className="font-heading font-700 text-xl leading-tight tracking-widest uppercase">{league.title}</h2>
-            <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
-              <Calendar className="h-3 w-3" />
-              <span>Cerrada el {closedDate}</span>
-              <span className="text-muted-foreground/30">·</span>
-              <span>{dur} de duración</span>
+        </header>
+
+        {champion && (
+          <div className="hc-capsule-champion">
+            <div className="hc-capsule-champion-portrait">
+              <Crown className="crown" size={14} strokeWidth={2} />
+              <AvatarImg url={champion.avatar_url} username={champion.username} />
+            </div>
+            <div className="hc-capsule-champion-info">
+              <span className="hc-capsule-champion-kicker">Campeón de temporada</span>
+              <Link
+                href={`/profile/${champion.id}`}
+                className="hc-capsule-champion-name"
+              >
+                {champion.username}
+              </Link>
+              <div className="hc-capsule-champion-stats">
+                <span>
+                  <span className="pts">{champion.points}</span> pts
+                </span>
+                <span>
+                  <span className="wins">{champion.wins}V</span>
+                  {' '}
+                  <span className="losses">{champion.losses}D</span>
+                </span>
+                <span>{champion.winrate.toFixed(1)}% WR</span>
+              </div>
             </div>
           </div>
-        </div>
-        <div className="flex items-center gap-2 text-xs text-muted-foreground/70 shrink-0 font-medium">
-          <span>{standings.length} jugadores</span>
-          <span className="text-muted-foreground/30">·</span>
-          <span>{resolvedMatches}/{totalMatches} resueltas</span>
-          {voidedMatches > 0 && (
-            <>
-              <span className="text-muted-foreground/30">·</span>
-              <span>{voidedMatches} anuladas</span>
-            </>
-          )}
-        </div>
+        )}
+
+        {top3.length > 0 && (
+          <div className="hc-capsule-top3">
+            {top3.map((row, i) => {
+              const rank = i + 1
+              const cls = rank === 1 ? 'gold' : rank === 2 ? 'silver' : 'bronze'
+              return (
+                <Link
+                  key={row.id}
+                  href={`/profile/${row.id}`}
+                  className="hc-capsule-top3-row"
+                >
+                  <span className={`hc-mini-rank ${cls}`}>{rank}</span>
+                  <div className="hc-mini-user">
+                    <div className="hc-mini-avatar">
+                      <AvatarImg url={row.avatar_url} username={row.username} />
+                    </div>
+                    <span className="hc-mini-name">{row.username}</span>
+                  </div>
+                  <span className="hc-mini-wl">
+                    <span className="w">{row.wins}V</span>
+                    {' '}
+                    <span className="l">{row.losses}D</span>
+                  </span>
+                  <span className="hc-mini-pts">{row.points}</span>
+                </Link>
+              )
+            })}
+          </div>
+        )}
+
+        <details className="hc-capsule-details">
+          <summary>
+            <ScrollText size={13} strokeWidth={2} />
+            Ver registro completo
+            <ChevronDown className="chevron" strokeWidth={2.5} />
+          </summary>
+
+          <div className="hc-capsule-expand">
+            <div>
+              <div className="hc-standings-head">
+                <span>#</span>
+                <span>Jugador</span>
+                <span>Pts</span>
+                <span>V — D</span>
+                <span>WR</span>
+              </div>
+              <div className="hc-standings-list">
+                {standings.map((row, i) => {
+                  const rank = i + 1
+                  const rankCls =
+                    rank === 1
+                      ? 'gold'
+                      : rank === 2
+                      ? 'silver'
+                      : rank === 3
+                      ? 'bronze'
+                      : ''
+                  return (
+                    <Link
+                      key={row.id}
+                      href={`/profile/${row.id}`}
+                      className={`hc-standings-row${rank === 1 ? ' champ' : ''}`}
+                    >
+                      <span className={`hc-srow-rank ${rankCls}`}>{rank}</span>
+                      <div className="hc-srow-user">
+                        <div className="hc-mini-avatar">
+                          <AvatarImg url={row.avatar_url} username={row.username} />
+                        </div>
+                        <span className="hc-srow-name">{row.username}</span>
+                      </div>
+                      <span className="hc-srow-pts">{row.points}</span>
+                      <span className="hc-srow-wl">
+                        <span className="w">{row.wins}</span>
+                        <span className="sep">—</span>
+                        <span className="l">{row.losses}</span>
+                      </span>
+                      <span className="hc-srow-wr">
+                        {row.winrate.toFixed(1)}%
+                      </span>
+                    </Link>
+                  )
+                })}
+              </div>
+            </div>
+
+            <div className="hc-results-wrap">
+              <div className="hc-results-head">
+                <Medal /> Resultados
+              </div>
+              <div className="hc-results">
+                {grouped.resolved.length > 0 && (
+                  <>
+                    <div className="hc-match-group win">
+                      Resueltos
+                      <span className="count">{grouped.resolved.length}</span>
+                    </div>
+                    {grouped.resolved.map((m) => (
+                      <MatchResult
+                        key={m.id}
+                        match={m}
+                        index={matchIndex.get(m.id) ?? 0}
+                        profileMap={profileMap}
+                      />
+                    ))}
+                  </>
+                )}
+                {grouped.voided.length > 0 && (
+                  <>
+                    <div className="hc-match-group void">
+                      Anulados
+                      <span className="count">{grouped.voided.length}</span>
+                    </div>
+                    {grouped.voided.map((m) => (
+                      <MatchResult
+                        key={m.id}
+                        match={m}
+                        index={matchIndex.get(m.id) ?? 0}
+                        profileMap={profileMap}
+                      />
+                    ))}
+                  </>
+                )}
+                {grouped.pending.length > 0 && (
+                  <>
+                    <div className="hc-match-group pending">
+                      Pendientes
+                      <span className="count">{grouped.pending.length}</span>
+                    </div>
+                    {grouped.pending.map((m) => (
+                      <MatchResult
+                        key={m.id}
+                        match={m}
+                        index={matchIndex.get(m.id) ?? 0}
+                        profileMap={profileMap}
+                      />
+                    ))}
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        </details>
       </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-4 items-start">
-        <div className="space-y-3">
-          {champion && <ChampionBanner champion={champion} />}
-
-          <Card className="overflow-hidden border-border/50">
-            <CardHeader className="pb-2 border-b border-border/40">
-              <CardTitle className="text-xs font-black text-muted-foreground uppercase tracking-[0.15em]">
-                Clasificación Final
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-0 pb-1">
-              <Table>
-                <TableHeader>
-                  <TableRow className="hover:bg-transparent">
-                    <TableHead className="w-10 text-center pl-4 text-[10px] font-black uppercase tracking-wide text-muted-foreground/60">#</TableHead>
-                    <TableHead className="text-[10px] font-black uppercase tracking-wide text-muted-foreground/60">Jugador</TableHead>
-                    <TableHead className="text-right text-[10px] font-black uppercase tracking-wide text-muted-foreground/60">Pts</TableHead>
-                    <TableHead className="text-right hidden sm:table-cell text-[10px] font-black uppercase tracking-wide text-muted-foreground/60">V — D</TableHead>
-                    <TableHead className="text-right pr-4 hidden sm:table-cell text-[10px] font-black uppercase tracking-wide text-muted-foreground/60">%</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {standings.map((row, i) => {
-                    const rank = i + 1
-                    return (
-                      <TableRow
-                        key={row.id}
-                        className={cn('transition-colors border-border/20', rank === 1 && 'bg-amber-950/15')}
-                      >
-                        <TableCell className="text-center pl-4"><HistoryRank rank={rank} /></TableCell>
-                        <TableCell>
-                          <Link href={`/profile/${row.id}`} className="flex items-center gap-2 group w-fit">
-                            <Avatar className="h-6 w-6 shrink-0">
-                              <AvatarImage src={row.avatar_url ?? undefined} />
-                              <AvatarFallback className="text-[10px] font-bold">
-                                {row.username.slice(0, 2).toUpperCase()}
-                              </AvatarFallback>
-                            </Avatar>
-                            <span className="text-sm font-semibold group-hover:underline underline-offset-4">
-                              {row.username}
-                            </span>
-                          </Link>
-                        </TableCell>
-                        <TableCell className="text-right font-black tabular-nums text-primary">
-                          {row.points}
-                        </TableCell>
-                        <TableCell className="text-right tabular-nums text-sm hidden sm:table-cell">
-                          <span className="text-green-400 font-semibold">{row.wins}</span>
-                          <span className="text-muted-foreground/40 mx-1">—</span>
-                          <span className="text-red-400 font-semibold">{row.losses}</span>
-                        </TableCell>
-                        <TableCell className="text-right pr-4 tabular-nums text-sm text-muted-foreground hidden sm:table-cell">
-                          {row.winrate.toFixed(1)}%
-                        </TableCell>
-                      </TableRow>
-                    )
-                  })}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-        </div>
-
-        <Card className="self-start overflow-hidden border-border/50">
-          <CardHeader className="pb-2 border-b border-border/40">
-            <CardTitle className="text-xs font-black text-muted-foreground uppercase tracking-[0.15em]">
-              Resultados
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="pt-1 space-y-0.5">
-            {sortedMatches.map((m) => (
-              <MatchResultRow key={m.id} match={m} profileMap={profileMap} />
-            ))}
-          </CardContent>
-        </Card>
-      </div>
-    </section>
+    </article>
   )
 }
 
-// ─── History hero banner ──────────────────────────────────────────────────────
+// ═════════════════════════════════════════════════════════════════
+// Console shell
+// ═════════════════════════════════════════════════════════════════
 
-function HistoryHero({ subtitle }: { subtitle: string }) {
+function ConsoleShell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="relative rounded-2xl overflow-hidden border border-white/8 shadow-xl">
-      <svg
-        className="absolute inset-0 w-full h-full"
-        viewBox="0 0 1200 200"
-        preserveAspectRatio="xMidYMid slice"
-        aria-hidden
-      >
-        <defs>
-          <linearGradient id="hhBase" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0%" stopColor="#07060c"/>
-            <stop offset="100%" stopColor="#040508"/>
-          </linearGradient>
-          <radialGradient id="hhGlow" cx="50%" cy="80%" r="60%">
-            <stop offset="0%" stopColor="#4060ff" stopOpacity="0.12"/>
-            <stop offset="100%" stopColor="#4060ff" stopOpacity="0"/>
-          </radialGradient>
-          <radialGradient id="hhLeft" cx="8%" cy="50%" r="50%">
-            <stop offset="0%" stopColor="#00c8e8" stopOpacity="0.08"/>
-            <stop offset="100%" stopColor="#00c8e8" stopOpacity="0"/>
-          </radialGradient>
-          <radialGradient id="hhRight" cx="92%" cy="50%" r="50%">
-            <stop offset="0%" stopColor="#4060ff" stopOpacity="0.08"/>
-            <stop offset="100%" stopColor="#4060ff" stopOpacity="0"/>
-          </radialGradient>
-          <linearGradient id="hhMtn" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#0c0e20"/>
-            <stop offset="100%" stopColor="#06060a"/>
-          </linearGradient>
-          <filter id="hhBlur"><feGaussianBlur stdDeviation="7"/></filter>
-        </defs>
+    <>
+      <div className="hc-scene" />
+      <div className="history-console relative z-10">
+        <div className="hc-console">
+          <span className="hc-rivet tl" />
+          <span className="hc-rivet tr" />
+          <span className="hc-rivet bl" />
+          <span className="hc-rivet br" />
+          <span className="hc-stripes tl" />
+          <span className="hc-stripes tr" />
+          <span className="hc-stripes bl" />
+          <span className="hc-stripes br" />
+          <span className="hc-nameplate">
+            <Archive size={11} strokeWidth={2.2} />
+            Archivo · Hall of Champions
+          </span>
 
-        <rect width="1200" height="200" fill="url(#hhBase)"/>
-        <rect width="1200" height="200" fill="url(#hhGlow)"/>
-        <rect width="1200" height="200" fill="url(#hhLeft)"/>
-        <rect width="1200" height="200" fill="url(#hhRight)"/>
-
-        {[[55,10],[120,18],[200,8],[310,14],[430,6],[550,12],[680,9],[800,16],[920,7],[1040,13],[1160,20],[1180,5],[90,30],[380,28],[700,32],[1000,26]].map(([x,y],i) => (
-          <circle key={i} cx={x} cy={y} r={i%4===0?0.85:0.5} fill="white" opacity={0.12+((i*11)%5)*0.05}/>
-        ))}
-
-        <g stroke="rgba(64,96,255,0.025)" strokeWidth="0.7" fill="none">
-          <ellipse cx="180" cy="100" rx="170" ry="108"/>
-          <ellipse cx="180" cy="100" rx="126" ry="80"/>
-          <ellipse cx="180" cy="100" rx="84" ry="52"/>
-          <ellipse cx="180" cy="100" rx="46" ry="29"/>
-        </g>
-        <g stroke="rgba(0,200,232,0.020)" strokeWidth="0.6" fill="none">
-          <ellipse cx="1020" cy="95" rx="155" ry="100"/>
-          <ellipse cx="1020" cy="95" rx="112" ry="72"/>
-          <ellipse cx="1020" cy="95" rx="72" ry="46"/>
-        </g>
-        <g stroke="rgba(245,158,11,0.055)" strokeWidth="0.8" fill="none">
-          <circle cx="600" cy="100" r="68"/>
-          <circle cx="600" cy="100" r="50"/>
-          <circle cx="600" cy="100" r="34"/>
-        </g>
-        <path d="M588,68 L612,68 L614,82 C622,82 628,88 628,96 C628,104 622,110 614,110 L612,118 L620,122 L580,122 L588,118 L586,110 C578,110 572,104 572,96 C572,88 578,82 586,82 Z"
-          fill="none" stroke="rgba(245,158,11,0.06)" strokeWidth="0.8"/>
-
-        <path d="M0,200 L70,150 L150,165 L240,138 L360,158 L480,130 L600,148 L720,125 L840,145 L960,122 L1080,142 L1170,130 L1200,135 L1200,200Z" fill="url(#hhMtn)" opacity="0.9"/>
-
-        <g opacity="0.05" filter="url(#hhBlur)">
-          <line x1="600" y1="200" x2="520" y2="0" stroke="#00c8e8" strokeWidth="80"/>
-          <line x1="600" y1="200" x2="680" y2="0" stroke="#4060ff" strokeWidth="60"/>
-        </g>
-
-        <ellipse cx="600" cy="198" rx="130" ry="8" fill="rgba(0,200,232,0.25)" filter="url(#hhBlur)"/>
-        <ellipse cx="600" cy="198" rx="90" ry="6" fill="none" stroke="rgba(0,200,232,0.35)" strokeWidth="0.6" opacity="0.35"/>
-
-        <circle cx="30" cy="200" r="65" fill="none" stroke="rgba(255,255,255,0.016)" strokeWidth="0.6"/>
-        <circle cx="1170" cy="195" r="75" fill="none" stroke="rgba(255,255,255,0.016)" strokeWidth="0.6"/>
-      </svg>
-
-      <div className="absolute top-0 inset-x-0 h-0.5 bg-gradient-to-r from-primary/40 via-blue-400/50 to-primary/40"/>
-
-      <div className="relative px-8 py-7 flex flex-col sm:flex-row sm:items-end gap-4">
-        <div className="flex-1">
-          <p className="text-[10px] font-black uppercase tracking-[0.30em] text-primary/60 mb-2">
-            Hall of Champions
-          </p>
-          <h1 className="font-heading text-4xl sm:text-5xl font-700 tracking-widest leading-none text-white/95 mb-1.5 uppercase">
-            Archivo de{' '}
-            <span className="text-primary drop-shadow-[0_0_15px_rgba(0,200,232,0.4)]">Ligas</span>
-          </h1>
-          <p className="text-sm text-white/35 font-medium">{subtitle}</p>
-        </div>
-        <div className="shrink-0">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 border border-primary/25 shadow-lg shadow-primary/10">
-            <Trophy className="h-5 w-5 text-primary" strokeWidth={2}/>
+          <div className="hc-console-inner">
+            <div className="hc-page">{children}</div>
           </div>
         </div>
       </div>
-    </div>
+    </>
   )
 }
 
-// ─── Page ─────────────────────────────────────────────────────────────────────
+// ═════════════════════════════════════════════════════════════════
+// Page
+// ═════════════════════════════════════════════════════════════════
 
 export default async function HistoryPage() {
   const supabase = await createClient()
@@ -471,20 +832,23 @@ export default async function HistoryPage() {
 
   if (leagues.length === 0) {
     return (
-      <div className="space-y-6 pb-10">
-        <HistoryHero subtitle="Ninguna temporada completada todavía" />
-        <Card className="border-border/50">
-          <CardContent className="py-16 text-center space-y-1">
-            <p className="text-sm font-semibold text-muted-foreground">Ninguna temporada completada</p>
-            <p className="text-xs text-muted-foreground">
-              Las ligas cerradas aparecerán aquí como registro permanente.
-            </p>
-          </CardContent>
-        </Card>
-      </div>
+      <ConsoleShell>
+        <HistoryHero totalSeasons={0} />
+        <div className="hc-empty">
+          <div className="hc-empty-emblem">
+            <Trophy size={28} strokeWidth={1.5} />
+          </div>
+          <h3>Aún sin temporadas selladas</h3>
+          <p>
+            Las ligas cerradas se archivarán aquí como registro permanente del
+            torneo. Cuando el admin cierre una liga, su campeón entrará al Hall.
+          </p>
+        </div>
+      </ConsoleShell>
     )
   }
 
+  // Fetch matches + profiles
   const leagueIds = leagues.map((l) => l.id)
   const { data: allMatchesRaw } = await supabase
     .from('matches')
@@ -502,58 +866,123 @@ export default async function HistoryPage() {
     .select('id, username, avatar_url')
     .in('id', playerIds)
 
-  const profiles = (profilesRaw ?? []) as Pick<Profile, 'id' | 'username' | 'avatar_url'>[]
+  const profiles = (profilesRaw ?? []) as SlimProfile[]
   const profileMap = new Map(profiles.map((p) => [p.id, p]))
 
+  // Pre-compute per-league data
   const leagueData = leagues.map((league) => {
     const matches = allMatches.filter((m) => m.league_id === league.id)
-    const participantIds = [...new Set(matches.flatMap((m) => [m.player_a_id, m.player_b_id]))]
+    const participantIds = [
+      ...new Set(matches.flatMap((m) => [m.player_a_id, m.player_b_id])),
+    ]
     const participants = participantIds
       .map((id) => profileMap.get(id))
-      .filter((p): p is Pick<Profile, 'id' | 'username' | 'avatar_url'> => !!p)
+      .filter((p): p is SlimProfile => !!p)
 
     return { league, matches, standings: computeStandings(matches, participants) }
   })
 
-  const historySubtitle = `${leagues.length} temporada${leagues.length !== 1 ? 's' : ''} completada${leagues.length !== 1 ? 's' : ''} · registro permanente`
+  // Seasons numbered ascending by chronology (oldest = I). leagues are
+  // sorted DESC by closed_at, so season number = (total - index).
+  const totalSeasons = leagueData.length
+  const numbered = leagueData.map((d, i) => ({
+    ...d,
+    seasonNum: totalSeasons - i,
+  }))
+
+  // Legacy stats
+  const championCounts = new Map<string, number>()
+  for (const { standings } of leagueData) {
+    const c = standings[0]
+    if (c) championCounts.set(c.id, (championCounts.get(c.id) ?? 0) + 1)
+  }
+  let dominantChampion: LegacyStats['dominantChampion'] = null
+  for (const [id, titles] of championCounts.entries()) {
+    const profile = profileMap.get(id)
+    if (!profile) continue
+    if (!dominantChampion || titles > dominantChampion.titles) {
+      dominantChampion = { profile, titles }
+    }
+  }
+
+  const activityCounts = new Map<string, number>()
+  for (const m of allMatches) {
+    if (m.status === 'validated' || m.status === 'admin_resolved') {
+      activityCounts.set(m.player_a_id, (activityCounts.get(m.player_a_id) ?? 0) + 1)
+      activityCounts.set(m.player_b_id, (activityCounts.get(m.player_b_id) ?? 0) + 1)
+    }
+  }
+  let mostActive: LegacyStats['mostActive'] = null
+  for (const [id, matches] of activityCounts.entries()) {
+    const profile = profileMap.get(id)
+    if (!profile) continue
+    if (!mostActive || matches > mostActive.matches) {
+      mostActive = { profile, matches }
+    }
+  }
+
+  const totalMatchesResolved = allMatches.filter(
+    (m) => m.status === 'validated' || m.status === 'admin_resolved',
+  ).length
+  const totalMatchesVoided = allMatches.filter((m) => m.status === 'voided').length
+
+  const durations = leagueData
+    .map((d) => durationDays(d.league.created_at, d.league.closed_at))
+    .filter((d): d is number => d !== null)
+  const avgDurationDays =
+    durations.length > 0
+      ? Math.round(durations.reduce((a, b) => a + b, 0) / durations.length)
+      : null
+
+  const legacyStats: LegacyStats = {
+    totalSeasons,
+    totalMatchesResolved,
+    totalMatchesVoided,
+    avgDurationDays,
+    dominantChampion,
+    mostActive,
+  }
+
+  // Champions shelf entries (drop seasons with no champion, if any)
+  const shelfEntries = numbered
+    .map(({ league, standings, seasonNum }) => {
+      const champion = standings[0]
+      if (!champion) return null
+      return { leagueId: league.id, league, champion, seasonNum }
+    })
+    .filter(
+      (e): e is { leagueId: string; league: League; champion: PlayerRow; seasonNum: number } =>
+        !!e,
+    )
 
   return (
-    <div className="space-y-10 pb-10">
+    <ConsoleShell>
+      <HistoryHero totalSeasons={totalSeasons} />
 
-      <HistoryHero subtitle={historySubtitle} />
+      <ChampionsShelf entries={shelfEntries} championCounts={championCounts} />
 
-      {leagueData.length > 1 && (
-        <div className="space-y-2">
-          <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.18em]">
-            Hall of Champions
-          </p>
-          <div className="flex flex-wrap gap-2">
-            {leagueData.map(({ league, standings }) => {
-              const champ = standings[0]
-              if (!champ) return null
-              return (
-                <div
-                  key={league.id}
-                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-amber-800/50 bg-amber-950/20 text-xs"
-                >
-                  <Crown className="h-3 w-3 text-amber-400 fill-amber-400" strokeWidth={0} />
-                  <span className="font-bold text-amber-300">{champ.username}</span>
-                  <span className="text-muted-foreground/40">·</span>
-                  <span className="text-muted-foreground truncate max-w-[100px]">{league.title}</span>
-                </div>
-              )
-            })}
-          </div>
-          <Separator className="mt-4 opacity-30" />
+      <LegacyStrip stats={legacyStats} />
+
+      <div>
+        <div className="hc-section-head">
+          <span className="hc-section-head-label">
+            <ScrollText /> Crónica de Temporadas
+          </span>
         </div>
-      )}
 
-      {leagueData.map(({ league, standings, matches }, i) => (
-        <div key={league.id}>
-          <LeagueCard league={league} standings={standings} matches={matches} profileMap={profileMap} />
-          {i < leagueData.length - 1 && <Separator className="mt-10 opacity-30" />}
+        <div className="hc-capsules">
+          {numbered.map(({ league, standings, matches, seasonNum }) => (
+            <SeasonCapsule
+              key={league.id}
+              league={league}
+              seasonNum={seasonNum}
+              standings={standings}
+              matches={matches}
+              profileMap={profileMap}
+            />
+          ))}
         </div>
-      ))}
-    </div>
+      </div>
+    </ConsoleShell>
   )
 }

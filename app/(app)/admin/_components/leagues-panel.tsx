@@ -2,10 +2,11 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus, Loader2, Trophy, Lock, Swords, AlertTriangle } from 'lucide-react'
+import { Plus, Loader2, Trophy, Lock, Swords, AlertTriangle, Dices } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { createLeague, closeLeague } from '@/lib/actions/admin'
+import { rollActiveMatch } from '@/lib/actions/match'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -98,6 +99,19 @@ export function LeaguesPanel({
       }
       toast.success(`"${closeTarget.title}" archived.`)
       setCloseTarget(null)
+      router.refresh()
+    })
+  }
+
+  function handleRoll() {
+    if (!activeLeague) return
+    startTransition(async () => {
+      const result = await rollActiveMatch(activeLeague.id)
+      if (result.error) {
+        toast.error('Failed to roll', { description: String(result.error) })
+        return
+      }
+      toast.success('Nuevo duelo activo sorteado.')
       router.refresh()
     })
   }
@@ -197,6 +211,25 @@ export function LeaguesPanel({
                     Close League
                   </Button>
                 </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full gap-1.5"
+                  onClick={handleRoll}
+                  disabled={isPending || activeStats.pending === 0}
+                  title={
+                    activeStats.pending === 0
+                      ? 'No quedan duelos pendientes'
+                      : 'Sortea aleatoriamente el próximo duelo activo'
+                  }
+                >
+                  {isPending ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <Dices className="h-3.5 w-3.5" />
+                  )}
+                  Tirar dado — sortear duelo
+                </Button>
               </CardContent>
             </Card>
           ) : (

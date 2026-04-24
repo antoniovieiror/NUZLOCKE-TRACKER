@@ -130,6 +130,7 @@ export async function syncSaveFile(profileId: string, formData: FormData): Promi
       box,
       graveyard,
       deaths: graveyard.length,
+      badges: Math.min(12, Math.max(0, parsed.badgeCount)),
       save_sync_status: 'synced',
       save_parse_error: null,
       save_synced_at: new Date().toISOString(),

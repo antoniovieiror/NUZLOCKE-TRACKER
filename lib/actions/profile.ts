@@ -29,7 +29,7 @@ async function assertCanEdit(profileId: string) {
 
 export async function updateNuzlockeState(
   profileId: string,
-  data: { badges: number; wipes: number; notes: string }
+  data: { badges: number; wipes: number }
 ) {
   const { supabase, error } = await assertCanEdit(profileId)
   if (error) return { error }
@@ -39,8 +39,41 @@ export async function updateNuzlockeState(
     .update({
       badges: Math.max(0, Math.floor(data.badges)),
       wipes: Math.max(0, Math.floor(data.wipes)),
-      notes: data.notes.trim() || null,
     })
+    .eq('id', profileId)
+
+  if (dbError) return { error: dbError.message }
+  revalidatePath(`/profile/${profileId}`)
+  return { success: true }
+}
+
+// ─── Wipes (manual) ────────────────────────────────────────────────────────────
+
+export async function updateWipes(profileId: string, wipes: number) {
+  const { supabase, error } = await assertCanEdit(profileId)
+  if (error) return { error }
+
+  const { error: dbError } = await supabase!
+    .from('profiles')
+    .update({ wipes: Math.max(0, Math.floor(wipes)) })
+    .eq('id', profileId)
+
+  if (dbError) return { error: dbError.message }
+  revalidatePath(`/profile/${profileId}`)
+  return { success: true }
+}
+
+// ─── Log book ──────────────────────────────────────────────────────────────────
+
+export async function updateNotes(profileId: string, notes: string) {
+  const { supabase, error } = await assertCanEdit(profileId)
+  if (error) return { error }
+
+  const trimmed = notes.trim().slice(0, 1000)
+
+  const { error: dbError } = await supabase!
+    .from('profiles')
+    .update({ notes: trimmed || null })
     .eq('id', profileId)
 
   if (dbError) return { error: dbError.message }

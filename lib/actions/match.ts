@@ -134,3 +134,35 @@ export async function adminVoidMatch(matchId: string) {
   revalidatePath('/league')
   return { success: true }
 }
+
+// ─── Active duel overrides (admin only) ───────────────────────────────────────
+
+export async function activateMatch(matchId: string) {
+  const { supabase, isAdmin, error } = await getAuthContext()
+  if (error || !supabase) return { error: error ?? 'Not authenticated' }
+  if (!isAdmin) return { error: 'Admin only' }
+
+  const { error: rpcErr } = await supabase.rpc('force_activate_match', {
+    p_match_id: matchId,
+  })
+  if (rpcErr) return { error: rpcErr.message }
+
+  revalidatePath(`/match/${matchId}`)
+  revalidatePath('/league')
+  return { success: true }
+}
+
+export async function rollActiveMatch(leagueId: string) {
+  const { supabase, isAdmin, error } = await getAuthContext()
+  if (error || !supabase) return { error: error ?? 'Not authenticated' }
+  if (!isAdmin) return { error: 'Admin only' }
+
+  const { error: rpcErr } = await supabase.rpc('pick_next_active_match', {
+    p_league_id: leagueId,
+  })
+  if (rpcErr) return { error: rpcErr.message }
+
+  revalidatePath('/league')
+  revalidatePath('/admin')
+  return { success: true }
+}

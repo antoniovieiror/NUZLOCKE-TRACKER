@@ -1,12 +1,15 @@
 import { notFound } from 'next/navigation'
+import { Trophy } from 'lucide-react'
 
 import { createClient } from '@/lib/supabase/server'
 import type { Profile, LeaderboardEntry } from '@/lib/types'
 
 import { AvatarUpload } from './_components/avatar-upload'
 import { UsernameEditor } from './_components/username-editor'
-import { EditStateDialog } from './_components/edit-state-dialog'
-import { TeamEditDialog } from './_components/team-edit-dialog'
+import { LastMatchPanel, type LastMatchData } from './_components/last-match-panel'
+import { LegendaryAside } from './_components/legendary-aside'
+import { Logbook } from './_components/logbook'
+import { NuzlockeStats } from './_components/nuzlocke-stats'
 import { SaveSyncWidget } from './_components/save-sync-widget'
 import { StatGauges } from './_components/stat-gauges'
 import { TeamHex } from './_components/team-hex'
@@ -14,6 +17,12 @@ import { PCStorageGrid } from './_components/pc-storage-grid'
 import { GraveyardGrid } from './_components/graveyard-grid'
 import { MvpPodium, MvpPodiumEmpty } from './_components/mvp-podium'
 import './profile.css'
+
+interface LeagueRank {
+  rank: number
+  total: number
+  title: string
+}
 
 // ─── Dragon Ball badge SVG ───────────────────────────────────────────────────
 
@@ -91,24 +100,13 @@ function starPoints(cx: number, cy: number, r: number): string {
 
 // ─── Gym Badges (console style) ──────────────────────────────────────────────
 
-function GymBadgesPanel({ count, canEdit, profileId, profile }: {
-  count: number
-  canEdit: boolean
-  profileId: string
-  profile: Profile
-}) {
+function GymBadgesPanel({ count }: { count: number }) {
   return (
     <div className="tc-panel tc-fade-in-up">
       <span className="tc-mini-rivet tl" /><span className="tc-mini-rivet tr" />
       <span className="tc-mini-rivet bl" /><span className="tc-mini-rivet br" />
       <div className="tc-panel-header">
         <h2>Medallas de Gimnasio</h2>
-        {canEdit && (
-          <EditStateDialog
-            profileId={profileId}
-            initialValues={{ badges: profile.badges, wipes: profile.wipes, notes: profile.notes }}
-          />
-        )}
       </div>
       <div className="tc-panel-inner">
         <div className="tc-badges-grid">
@@ -138,44 +136,16 @@ function GymBadgesPanel({ count, canEdit, profileId, profile }: {
   )
 }
 
-// ─── Nuzlocke Stats ──────────────────────────────────────────────────────────
-
-function NuzlockeStatsPanel({ deaths, wipes }: { deaths: number; wipes: number; }) {
-  return (
-    <div className="tc-panel tc-fade-in-up">
-      <span className="tc-mini-rivet tl" /><span className="tc-mini-rivet tr" />
-      <span className="tc-mini-rivet bl" /><span className="tc-mini-rivet br" />
-      <div className="tc-panel-header"><h2>Nuzlocke Stats</h2></div>
-      <div className="tc-panel-inner">
-        <div className="flex flex-col gap-2.5">
-          <div className="tc-nuz-row">
-            <span className="lbl"><span>&#x1F480;</span> Muertes</span>
-            <span className={`val ${deaths > 0 ? 'red' : ''}`}>{deaths}</span>
-          </div>
-          <div className="tc-nuz-row">
-            <span className="lbl"><span>&#x26A1;</span> Wipes</span>
-            <span className={`val ${wipes > 0 ? 'amber' : 'green'}`}>{wipes}</span>
-          </div>
-          {deaths === 0 && wipes === 0 && (
-            <div className="text-center">
-              <span className="tc-cert-badge">&#x25C6; Nuzlocke Certified</span>
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  )
-}
-
 // ─── Trainer Card (console style) ────────────────────────────────────────────
 
 function TrainerCardConsole({
-  profile, stats, canEdit, isOwnProfile,
+  profile, stats, canEdit, isOwnProfile, leagueRank,
 }: {
   profile: Profile
   stats: LeaderboardEntry | null
   canEdit: boolean
   isOwnProfile: boolean
+  leagueRank: LeagueRank | null
 }) {
   const points = stats?.total_points ?? 0
   const wins = stats?.total_wins ?? 0
@@ -222,37 +192,25 @@ function TrainerCardConsole({
           </div>
         </div>
       )}
-    </div>
-  )
-}
 
-// ─── Logbook ─────────────────────────────────────────────────────────────────
-
-function LogbookPanel({ notes }: { notes: string | null }) {
-  return (
-    <div className="tc-panel tc-fade-in-up">
-      <span className="tc-mini-rivet tl" /><span className="tc-mini-rivet tr" />
-      <span className="tc-mini-rivet bl" /><span className="tc-mini-rivet br" />
-      <div className="tc-panel-header"><h2>Log Book</h2></div>
-      <div className="tc-panel-inner" style={{ padding: 14 }}>
-        <div className="tc-logbook">
-          <div className="tc-logbook-title">Notas</div>
-          <div className={`tc-logbook-text ${!notes ? 'empty' : ''}`}>
-            {notes || 'Sin notas todavia'}
-          </div>
-          <div style={{ position: 'absolute', right: 6, bottom: 4, fontSize: 22, transform: 'rotate(30deg)', opacity: 0.75, pointerEvents: 'none' }}>
-            &#x270E;
+      {leagueRank && (
+        <div className="flex justify-center mt-2">
+          <div className="tc-rank-chip" title={leagueRank.title}>
+            <Trophy size={12} strokeWidth={2.6} />
+            <span className="tc-rank-pos">#{leagueRank.rank}</span>
+            <span className="tc-rank-sep">/</span>
+            <span className="tc-rank-total">{leagueRank.total}</span>
+            <span className="tc-rank-league">{leagueRank.title}</span>
           </div>
         </div>
-      </div>
+      )}
     </div>
   )
 }
 
 // ─── Save Sync Panel (console wrapper) ───────────────────────────────────────
 
-function SaveSyncPanel({ profileId, profile, canEdit }: { profileId: string; profile: Profile; canEdit: boolean }) {
-  if (!canEdit) return null
+function SaveSyncPanel({ profileId, profile }: { profileId: string; profile: Profile }) {
   return (
     <div className="tc-panel tc-fade-in-up">
       <span className="tc-mini-rivet tl" /><span className="tc-mini-rivet tr" />
@@ -297,6 +255,81 @@ export default async function ProfilePage({ params }: { params: Promise<{ id: st
   const canEdit = !!currentUser && (currentUser.id === profile.id || currentUserRole === 'admin')
   const isOwnProfile = currentUser?.id === profile.id
 
+  // ── League rank + last-match queries (run in parallel) ───────────────────────
+  const [activeLeagueRes, lastWinRes] = await Promise.all([
+    supabase.from('leagues').select('id, title').eq('status', 'active').maybeSingle(),
+    supabase
+      .from('matches')
+      .select('id, player_a_id, player_b_id, winner_id, created_at, replay_url, league_id')
+      .eq('winner_id', id)
+      .in('status', ['validated', 'admin_resolved'])
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+  ])
+
+  let leagueRank: LeagueRank | null = null
+  if (activeLeagueRes.data) {
+    const { data: leagueMatches } = await supabase
+      .from('matches')
+      .select('player_a_id, player_b_id, winner_id, status')
+      .eq('league_id', activeLeagueRes.data.id)
+
+    if (leagueMatches && leagueMatches.length > 0) {
+      const stats = new Map<string, { points: number; wins: number; played: number }>()
+      for (const m of leagueMatches) {
+        if (!stats.has(m.player_a_id)) stats.set(m.player_a_id, { points: 0, wins: 0, played: 0 })
+        if (!stats.has(m.player_b_id)) stats.set(m.player_b_id, { points: 0, wins: 0, played: 0 })
+        if ((m.status === 'validated' || m.status === 'admin_resolved') && m.winner_id) {
+          const a = stats.get(m.player_a_id)!
+          const b = stats.get(m.player_b_id)!
+          a.played++; b.played++
+          if (m.winner_id === m.player_a_id) { a.wins++; a.points += 2 }
+          else { b.wins++; b.points += 2 }
+        }
+      }
+      const sorted = Array.from(stats.entries())
+        .map(([sid, s]) => ({
+          id: sid,
+          points: s.points,
+          wins: s.wins,
+          winrate: s.played > 0 ? s.wins / s.played : 0,
+        }))
+        .sort((x, y) =>
+          y.points - x.points ||
+          y.wins - x.wins ||
+          y.winrate - x.winrate ||
+          x.id.localeCompare(y.id)
+        )
+      const idx = sorted.findIndex((s) => s.id === profile.id)
+      if (idx >= 0) {
+        leagueRank = { rank: idx + 1, total: sorted.length, title: activeLeagueRes.data.title }
+      }
+    }
+  }
+
+  let lastMatchData: LastMatchData | null = null
+  if (lastWinRes.data) {
+    const lastWin = lastWinRes.data
+    const opponentId =
+      lastWin.player_a_id === profile.id ? lastWin.player_b_id : lastWin.player_a_id
+
+    const [oppRes, leagueRes] = await Promise.all([
+      supabase.from('profiles').select('id, username, avatar_url').eq('id', opponentId).maybeSingle(),
+      supabase.from('leagues').select('title').eq('id', lastWin.league_id).maybeSingle(),
+    ])
+
+    lastMatchData = {
+      matchId: lastWin.id,
+      opponentId,
+      opponentUsername: oppRes.data?.username ?? 'Desconocido',
+      opponentAvatarUrl: oppRes.data?.avatar_url ?? null,
+      leagueTitle: leagueRes.data?.title ?? 'Liga',
+      createdAt: lastWin.created_at,
+      replayUrl: lastWin.replay_url,
+    }
+  }
+
   return (
     <>
       {/* Scene background */}
@@ -316,8 +349,13 @@ export default async function ProfilePage({ params }: { params: Promise<{ id: st
               <div className="tc-main-grid">
                 {/* LEFT COLUMN */}
                 <div className="tc-col">
-                  <GymBadgesPanel count={profile.badges} canEdit={canEdit} profileId={id} profile={profile} />
-                  <NuzlockeStatsPanel deaths={(profile.graveyard ?? []).length} wipes={profile.wipes} />
+                  <GymBadgesPanel count={profile.badges} />
+                  <NuzlockeStats
+                    profileId={id}
+                    deaths={(profile.graveyard ?? []).length}
+                    initialWipes={profile.wipes}
+                    canEdit={canEdit}
+                  />
                   {profile.mvp ? (
                     <MvpPodium
                       species={profile.mvp}
@@ -330,10 +368,18 @@ export default async function ProfilePage({ params }: { params: Promise<{ id: st
 
                 {/* CENTER COLUMN */}
                 <div className="tc-col tc-col-center">
-                  <TrainerCardConsole profile={profile} stats={stats} canEdit={canEdit} isOwnProfile={isOwnProfile} />
+                  <TrainerCardConsole
+                    profile={profile}
+                    stats={stats}
+                    canEdit={canEdit}
+                    isOwnProfile={isOwnProfile}
+                    leagueRank={leagueRank}
+                  />
                   <StatGauges stats={stats} />
                   {(profile.graveyard ?? []).length > 0 && (
-                    <GraveyardGrid graveyard={profile.graveyard ?? []} />
+                    <div className="tc-flex-grow-panel">
+                      <GraveyardGrid graveyard={profile.graveyard ?? []} />
+                    </div>
                   )}
                 </div>
 
@@ -341,28 +387,30 @@ export default async function ProfilePage({ params }: { params: Promise<{ id: st
                 <div className="tc-col">
                   <div className="tc-flex-grow-panel">
                     <TeamHex
-                      team={profile.team}
+                      profileId={profile.id}
+                      initialTeam={profile.team}
+                      initialMvp={profile.mvp}
                       canEdit={canEdit}
-                      editButton={
-                        canEdit ? (
-                          <TeamEditDialog
-                            profileId={profile.id}
-                            initialTeam={profile.team}
-                            initialMvp={profile.mvp}
-                          />
-                        ) : undefined
-                      }
                     />
                   </div>
                   <PCStorageGrid box={profile.box} />
                 </div>
               </div>
 
-              {/* BOTTOM ROW */}
+              {/* BOTTOM ROW — Logbook + Last Victory (always visible) */}
               <div className="tc-bottom-row">
-                <LogbookPanel notes={profile.notes} />
-                <SaveSyncPanel profileId={id} profile={profile} canEdit={canEdit} />
+                <Logbook profileId={id} initialNotes={profile.notes} canEdit={canEdit} />
+                <LastMatchPanel data={lastMatchData} />
               </div>
+
+              {/* SYNC ROW — Save Sync flanked by legendaries (owner only) */}
+              {isOwnProfile && (
+                <div className="tc-sync-row">
+                  <LegendaryAside species="kyogre" align="left" />
+                  <SaveSyncPanel profileId={id} profile={profile} />
+                  <LegendaryAside species="groudon" align="right" />
+                </div>
+              )}
             </div>
           </div>
         </div>

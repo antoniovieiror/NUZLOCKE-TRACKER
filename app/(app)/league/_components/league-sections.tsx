@@ -331,8 +331,8 @@ export function CurrentMatch({
     return (
       <div className="lc-current empty lc-fade-in-up">
         <div className="lc-current-head">
-          <span className="lc-current-kicker">Terminal de Duelos</span>
-          <span className="lc-current-status">en espera</span>
+          <span className="lc-current-kicker">Duelo Activo</span>
+          <span className="lc-current-status">sin duelos</span>
         </div>
         <p
           style={{
@@ -345,7 +345,7 @@ export function CurrentMatch({
             color: 'var(--lc-ink-muted)',
           }}
         >
-          No hay duelos en curso. Todas las partidas de esta jornada han sido resueltas.
+          Todos los duelos resueltos. Cierra la liga para archivarla.
         </p>
       </div>
     )
@@ -368,7 +368,8 @@ export function CurrentMatch({
     <div className="lc-current lc-fade-in-up">
       <div className="lc-current-head">
         <span className="lc-current-kicker">
-          {isMine ? 'Tu Duelo Activo' : 'Terminal de Duelos'}
+          Duelo Activo
+          {isMine && <span className="lc-te-toca">Te toca</span>}
         </span>
         <span className={`lc-current-status ${statusClass}`}>{statusLabel}</span>
       </div>
@@ -502,7 +503,9 @@ function VsCard({
   return (
     <Link href={`/match/${match.id}`} className={cardCls}>
       <span className="lc-vs-index">#{paddedNumber}</span>
-      <span className={`lc-vs-status-pill ${cls}`}>{label}</span>
+      {match.status !== 'validated' && match.status !== 'voided' && (
+        <span className={`lc-vs-status-pill ${cls}`}>{label}</span>
+      )}
 
       <div className="lc-vs-body">
         <div className="lc-vs-side">

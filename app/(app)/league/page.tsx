@@ -162,23 +162,18 @@ export default async function LeaguePage() {
       m.status === 'voided',
   ).length
 
-  const pending = matches.filter((m) => m.status === 'pending')
   const disputed = matches.filter((m) => m.status === 'disputed')
   const done = matches.filter(
     (m) => m.status === 'validated' || m.status === 'admin_resolved',
   )
   const voided = matches.filter((m) => m.status === 'voided')
 
-  const myPending = pending.filter(
-    (m) =>
-      m.player_a_id === currentUserId || m.player_b_id === currentUserId,
-  )
-  const otherPending = pending.filter((m) => !myPending.includes(m))
-
-  // Pick the featured (current) match — prioritise user involvement.
-  // Disputed matches live in the archive (admin review), so they're
-  // excluded from the rotating active-duel slot.
-  const featured: Match | null = myPending[0] ?? otherPending[0] ?? null
+  // Global active duel — every player sees the same one. The DB trigger
+  // keeps `leagues.active_match_id` pointing to a live pending match (or
+  // null when no pending matches remain).
+  const featured: Match | null = league.active_match_id
+    ? matches.find((m) => m.id === league.active_match_id) ?? null
+    : null
 
   const featuredA = featured ? profileMap.get(featured.player_a_id) ?? null : null
   const featuredB = featured ? profileMap.get(featured.player_b_id) ?? null : null

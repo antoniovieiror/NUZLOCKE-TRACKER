@@ -1,12 +1,11 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { Shield, Loader2 } from 'lucide-react'
+import { Shield, Loader2, Gavel, Ban, Crosshair, CheckCircle2 } from 'lucide-react'
 import { toast } from 'sonner'
 
-import { adminResolveMatch, adminVoidMatch } from '@/lib/actions/match'
+import { activateMatch, adminResolveMatch, adminVoidMatch } from '@/lib/actions/match'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   Dialog,
   DialogContent,
@@ -23,6 +22,7 @@ interface AdminControlsProps {
   playerBId: string
   playerAUsername: string
   playerBUsername: string
+  isActiveDuel: boolean
 }
 
 export function AdminControls({
@@ -32,13 +32,26 @@ export function AdminControls({
   playerBId,
   playerAUsername,
   playerBUsername,
+  isActiveDuel,
 }: AdminControlsProps) {
   const [resolveOpen, setResolveOpen] = useState(false)
   const [voidOpen, setVoidOpen] = useState(false)
   const [isPending, startTransition] = useTransition()
 
+  const isPending_ = status === 'pending'
   const isResolved = status === 'validated' || status === 'admin_resolved'
   const isVoided = status === 'voided'
+
+  function handleActivate() {
+    startTransition(async () => {
+      const result = await activateMatch(matchId)
+      if (result.error) {
+        toast.error('No se pudo activar', { description: String(result.error) })
+      } else {
+        toast.success('Duelo activo actualizado')
+      }
+    })
+  }
 
   function resolveAs(winnerId: string) {
     startTransition(async () => {
@@ -68,42 +81,101 @@ export function AdminControls({
 
   return (
     <>
-      <Card className="border-blue-200 dark:border-blue-800">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base flex items-center gap-1.5">
-            <Shield className="h-4 w-4 text-blue-500" />
-            Admin Controls
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-2">
-          {!isResolved && (
-            <Button
-              variant="outline"
-              size="sm"
-              className="w-full"
-              onClick={() => setResolveOpen(true)}
+      <section className="mv-warroom relative p-4 overflow-hidden">
+        <div className="mv-warroom-stripes" />
+        <div className="relative">
+          <div className="flex items-center justify-between gap-3 mb-3">
+            <div className="flex items-center gap-2.5">
+              <div className="grid place-items-center w-8 h-8 rounded-md bg-blue-500/15 border border-blue-400/35">
+                <Shield className="w-4 h-4 text-blue-300" strokeWidth={2} />
+              </div>
+              <div>
+                <p className="mv-font-display font-bold text-sm uppercase tracking-[0.22em] text-blue-100">
+                  War Room
+                </p>
+                <p className="mv-font-mono text-[9.5px] uppercase tracking-[0.24em] text-blue-300/60">
+                  Controles de la dirección
+                </p>
+              </div>
+            </div>
+            {isActiveDuel ? (
+              <span className="mv-active-chip">
+                <CheckCircle2 className="h-2.5 w-2.5" strokeWidth={2.6} />
+                Duelo Activo
+              </span>
+            ) : (
+              <span className="mv-font-mono text-[9px] font-bold uppercase tracking-[0.28em] text-blue-300/60 hidden sm:inline">
+                Solo admin
+              </span>
+            )}
+          </div>
+
+          <div className="grid sm:grid-cols-2 gap-2">
+            {isPending_ && !isActiveDuel && (
+              <button
+                type="button"
+                onClick={handleActivate}
+                disabled={isPending}
+                className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg border border-emerald-400/25 bg-emerald-500/[0.05] hover:bg-emerald-500/[0.12] hover:border-emerald-400/50 text-emerald-100 transition-colors text-left sm:col-span-2 disabled:opacity-60"
+              >
+                {isPending ? (
+                  <Loader2 className="w-4 h-4 text-emerald-300 shrink-0 animate-spin" strokeWidth={2} />
+                ) : (
+                  <Crosshair className="w-4 h-4 text-emerald-300 shrink-0" strokeWidth={2} />
+                )}
+                <div className="flex-1">
+                  <p className="mv-font-display text-sm font-bold uppercase tracking-[0.14em]">
+                    Activar duelo
+                  </p>
+                  <p className="mv-font-mono text-[10px] text-emerald-300/65 tracking-[0.1em] uppercase">
+                    Fija este como el duelo activo global
+                  </p>
+                </div>
+              </button>
+            )}
+            {!isResolved && (
+              <button
+                type="button"
+                onClick={() => setResolveOpen(true)}
+                className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg border border-blue-400/30 bg-blue-500/[0.06] hover:bg-blue-500/[0.14] hover:border-blue-400/55 text-blue-100 transition-colors text-left"
+              >
+                <Gavel className="w-4 h-4 text-blue-300 shrink-0" strokeWidth={2} />
+                <div className="flex-1">
+                  <p className="mv-font-display text-sm font-bold uppercase tracking-[0.14em]">
+                    Resolver manualmente
+                  </p>
+                  <p className="mv-font-mono text-[10px] text-blue-300/60 tracking-[0.1em] uppercase">
+                    Fija un ganador sin votos
+                  </p>
+                </div>
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => setVoidOpen(true)}
+              className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg border border-rose-400/25 bg-rose-500/[0.04] hover:bg-rose-500/[0.12] hover:border-rose-400/50 text-rose-100 transition-colors text-left"
             >
-              Force Resolve
-            </Button>
-          )}
-          <Button
-            variant="outline"
-            size="sm"
-            className="w-full text-destructive hover:text-destructive"
-            onClick={() => setVoidOpen(true)}
-          >
-            Void Match
-          </Button>
-        </CardContent>
-      </Card>
+              <Ban className="w-4 h-4 text-rose-300 shrink-0" strokeWidth={2} />
+              <div className="flex-1">
+                <p className="mv-font-display text-sm font-bold uppercase tracking-[0.14em]">
+                  Anular partida
+                </p>
+                <p className="mv-font-mono text-[10px] text-rose-300/60 tracking-[0.1em] uppercase">
+                  Sin puntos ni winrate
+                </p>
+              </div>
+            </button>
+          </div>
+        </div>
+      </section>
 
       {/* ── Force Resolve dialog ── */}
       <Dialog open={resolveOpen} onOpenChange={setResolveOpen}>
         <DialogContent className="sm:max-w-sm">
           <DialogHeader>
-            <DialogTitle>Force Resolve</DialogTitle>
+            <DialogTitle className="mv-font-display tracking-[0.18em] uppercase">Forzar veredicto</DialogTitle>
             <DialogDescription>
-              Manually set the winner. This bypasses the normal vote flow.
+              Fija manualmente el ganador. Esto reemplaza el sistema de votos normal.
             </DialogDescription>
           </DialogHeader>
           <div className="grid grid-cols-2 gap-3 py-2">
@@ -113,7 +185,7 @@ export function AdminControls({
               onClick={() => resolveAs(playerAId)}
             >
               {isPending && <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />}
-              {playerAUsername} wins
+              Gana {playerAUsername}
             </Button>
             <Button
               variant="outline"
@@ -121,7 +193,7 @@ export function AdminControls({
               onClick={() => resolveAs(playerBId)}
             >
               {isPending && <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />}
-              {playerBUsername} wins
+              Gana {playerBUsername}
             </Button>
           </div>
           <DialogFooter>
@@ -130,7 +202,7 @@ export function AdminControls({
               onClick={() => setResolveOpen(false)}
               disabled={isPending}
             >
-              Cancel
+              Cancelar
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -140,10 +212,9 @@ export function AdminControls({
       <Dialog open={voidOpen} onOpenChange={setVoidOpen}>
         <DialogContent className="sm:max-w-sm">
           <DialogHeader>
-            <DialogTitle>Void this match?</DialogTitle>
+            <DialogTitle className="mv-font-display tracking-[0.18em] uppercase">¿Anular la partida?</DialogTitle>
             <DialogDescription>
-              This will set the match to Voided. No points will be awarded and it won&apos;t
-              count toward either player&apos;s winrate.
+              Marcará la partida como anulada. No se repartirán puntos y no contará para el winrate.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -152,7 +223,7 @@ export function AdminControls({
               onClick={() => setVoidOpen(false)}
               disabled={isPending}
             >
-              Cancel
+              Cancelar
             </Button>
             <Button
               variant="destructive"
@@ -160,7 +231,7 @@ export function AdminControls({
               onClick={handleVoid}
             >
               {isPending && <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />}
-              Void match
+              Anular
             </Button>
           </DialogFooter>
         </DialogContent>

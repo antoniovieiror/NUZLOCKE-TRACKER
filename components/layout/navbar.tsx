@@ -1,10 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { LogOut, Shield, Swords, Moon, Sun, BarChart3, History } from 'lucide-react'
-import { useTheme } from 'next-themes'
+import { LogOut, Shield, Swords, BarChart3, History } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { createClient } from '@/lib/supabase/client'
@@ -26,10 +24,6 @@ const navLinks = [
 export function Navbar({ user }: NavbarProps) {
   const pathname = usePathname()
   const router = useRouter()
-  const { resolvedTheme, setTheme } = useTheme()
-  const [mounted, setMounted] = useState(false)
-
-  useEffect(() => setMounted(true), [])
 
   async function handleSignOut() {
     const supabase = createClient()
@@ -108,23 +102,6 @@ export function Navbar({ user }: NavbarProps) {
 
         {/* ── Right side ── */}
         <div className="flex items-center gap-1 shrink-0">
-
-          {/* Theme toggle */}
-          {mounted && (
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
-              aria-label="Cambiar tema"
-              className="text-muted-foreground hover:text-foreground"
-            >
-              {resolvedTheme === 'dark' ? (
-                <Sun className="h-3.5 w-3.5" />
-              ) : (
-                <Moon className="h-3.5 w-3.5" />
-              )}
-            </Button>
-          )}
 
           {user && (
             <Link
