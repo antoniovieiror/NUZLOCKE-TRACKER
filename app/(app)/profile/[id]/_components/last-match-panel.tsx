@@ -3,6 +3,9 @@ import { ChevronRight, Film, Trophy } from 'lucide-react'
 
 export interface LastMatchData {
   matchId: string
+  winnerId: string
+  winnerUsername: string
+  winnerAvatarUrl: string | null
   opponentId: string
   opponentUsername: string
   opponentAvatarUrl: string | null
@@ -25,6 +28,42 @@ function relative(isoString: string): string {
   return years === 1 ? 'hace 1 año' : `hace ${years} años`
 }
 
+function PlayerSide({
+  username,
+  avatarUrl,
+  isWinner,
+  side,
+}: {
+  username: string
+  avatarUrl: string | null
+  isWinner: boolean
+  side: 'left' | 'right'
+}) {
+  return (
+    <div className={`tc-last-side ${side} ${isWinner ? 'winner' : 'loser'}`}>
+      <div className="tc-last-avatar">
+        {avatarUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={avatarUrl} alt={username} />
+        ) : (
+          <span>{username.charAt(0).toUpperCase()}</span>
+        )}
+        {isWinner && (
+          <span className="tc-last-trophy-badge" aria-hidden>
+            <Trophy size={11} strokeWidth={2.6} />
+          </span>
+        )}
+      </div>
+      <div className="tc-last-side-text">
+        <div className="tc-last-side-name">{username}</div>
+        <div className={`tc-last-side-pts ${isWinner ? 'win' : 'loss'}`}>
+          {isWinner ? '+2 pts' : '0 pts'}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export function LastMatchPanel({ data }: { data: LastMatchData | null }) {
   return (
     <div className="tc-panel tc-fade-in-up">
@@ -45,34 +84,38 @@ export function LastMatchPanel({ data }: { data: LastMatchData | null }) {
           </div>
         ) : (
           <Link href={`/match/${data.matchId}`} className="tc-last-link">
-            <div className="tc-last-body">
-              <div className="tc-last-opponent">
-                <div className="tc-last-avatar">
-                  {data.opponentAvatarUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={data.opponentAvatarUrl} alt={data.opponentUsername} />
-                  ) : (
-                    <span>{data.opponentUsername.charAt(0).toUpperCase()}</span>
-                  )}
+            <div className="tc-last-match">
+              <PlayerSide
+                username={data.winnerUsername}
+                avatarUrl={data.winnerAvatarUrl}
+                isWinner
+                side="left"
+              />
+              <div className="tc-last-mid">
+                <div className="tc-last-mid-bolt">
+                  <Trophy size={14} strokeWidth={2.6} />
                 </div>
-                <span className="tc-last-trophy-badge" aria-hidden>
-                  <Trophy size={12} strokeWidth={2.6} />
+                <div className="tc-last-mid-label">FIN</div>
+              </div>
+              <PlayerSide
+                username={data.opponentUsername}
+                avatarUrl={data.opponentAvatarUrl}
+                isWinner={false}
+                side="right"
+              />
+            </div>
+            <div className="tc-last-footer">
+              <span className="tc-last-league">{data.leagueTitle}</span>
+              {data.replayUrl && (
+                <span className="tc-last-replay">
+                  <Film size={10} strokeWidth={2.4} />
+                  Replay disponible
                 </span>
-              </div>
-              <div className="tc-last-text">
-                <div className="tc-last-label">DERROTADO</div>
-                <div className="tc-last-name">{data.opponentUsername}</div>
-                <div className="tc-last-meta">
-                  <span className="tc-last-league">{data.leagueTitle}</span>
-                  {data.replayUrl && (
-                    <span className="tc-last-replay">
-                      <Film size={10} strokeWidth={2.4} />
-                      Replay
-                    </span>
-                  )}
-                </div>
-              </div>
-              <ChevronRight size={18} strokeWidth={2.2} className="tc-last-chevron" />
+              )}
+              <span className="tc-last-cta">
+                Ver match
+                <ChevronRight size={14} strokeWidth={2.4} />
+              </span>
             </div>
           </Link>
         )}

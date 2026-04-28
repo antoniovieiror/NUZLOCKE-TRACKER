@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation'
-import { Trophy } from 'lucide-react'
+import { Crown } from 'lucide-react'
 
 import { createClient } from '@/lib/supabase/server'
 import type { Profile, LeaderboardEntry } from '@/lib/types'
@@ -7,10 +7,10 @@ import type { Profile, LeaderboardEntry } from '@/lib/types'
 import { AvatarUpload } from './_components/avatar-upload'
 import { UsernameEditor } from './_components/username-editor'
 import { LastMatchPanel, type LastMatchData } from './_components/last-match-panel'
-import { LegendaryAside } from './_components/legendary-aside'
 import { Logbook } from './_components/logbook'
 import { NuzlockeStats } from './_components/nuzlocke-stats'
 import { SaveSyncWidget } from './_components/save-sync-widget'
+import { RunVitalsWing, SysLinkWing } from './_components/diagnostic-wing'
 import { StatGauges } from './_components/stat-gauges'
 import { TeamHex } from './_components/team-hex'
 import { PCStorageGrid } from './_components/pc-storage-grid'
@@ -18,10 +18,9 @@ import { GraveyardGrid } from './_components/graveyard-grid'
 import { MvpPodium, MvpPodiumEmpty } from './_components/mvp-podium'
 import './profile.css'
 
-interface LeagueRank {
+interface GlobalRank {
   rank: number
   total: number
-  title: string
 }
 
 // ─── Dragon Ball badge SVG ───────────────────────────────────────────────────
@@ -139,13 +138,13 @@ function GymBadgesPanel({ count }: { count: number }) {
 // ─── Trainer Card (console style) ────────────────────────────────────────────
 
 function TrainerCardConsole({
-  profile, stats, canEdit, isOwnProfile, leagueRank,
+  profile, stats, canEdit, isOwnProfile, globalRank,
 }: {
   profile: Profile
   stats: LeaderboardEntry | null
   canEdit: boolean
   isOwnProfile: boolean
-  leagueRank: LeagueRank | null
+  globalRank: GlobalRank | null
 }) {
   const points = stats?.total_points ?? 0
   const wins = stats?.total_wins ?? 0
@@ -193,14 +192,14 @@ function TrainerCardConsole({
         </div>
       )}
 
-      {leagueRank && (
-        <div className="flex justify-center mt-2">
-          <div className="tc-rank-chip" title={leagueRank.title}>
-            <Trophy size={12} strokeWidth={2.6} />
-            <span className="tc-rank-pos">#{leagueRank.rank}</span>
-            <span className="tc-rank-sep">/</span>
-            <span className="tc-rank-total">{leagueRank.total}</span>
-            <span className="tc-rank-league">{leagueRank.title}</span>
+      {globalRank && (
+        <div className="flex justify-center mt-3">
+          <div className="tc-rank-chip">
+            <span className="tc-rank-glow" aria-hidden />
+            <span className="tc-rank-icon"><Crown size={13} strokeWidth={2.6} /></span>
+            <span className="tc-rank-label">Global Rank</span>
+            <span className="tc-rank-divider" aria-hidden />
+            <span className="tc-rank-pos">#{globalRank.rank}</span>
           </div>
         </div>
       )}
@@ -255,9 +254,9 @@ export default async function ProfilePage({ params }: { params: Promise<{ id: st
   const canEdit = !!currentUser && (currentUser.id === profile.id || currentUserRole === 'admin')
   const isOwnProfile = currentUser?.id === profile.id
 
-  // ── League rank + last-match queries (run in parallel) ───────────────────────
-  const [activeLeagueRes, lastWinRes] = await Promise.all([
-    supabase.from('leagues').select('id, title').eq('status', 'active').maybeSingle(),
+  // ── Global rank + last-match queries (run in parallel) ───────────────────────
+  const [leaderboardRes, lastWinRes] = await Promise.all([
+    supabase.from('leaderboard').select('id, username, total_points, total_wins, winrate'),
     supabase
       .from('matches')
       .select('id, player_a_id, player_b_id, winner_id, created_at, replay_url, league_id')
@@ -268,44 +267,16 @@ export default async function ProfilePage({ params }: { params: Promise<{ id: st
       .maybeSingle(),
   ])
 
-  let leagueRank: LeagueRank | null = null
-  if (activeLeagueRes.data) {
-    const { data: leagueMatches } = await supabase
-      .from('matches')
-      .select('player_a_id, player_b_id, winner_id, status')
-      .eq('league_id', activeLeagueRes.data.id)
-
-    if (leagueMatches && leagueMatches.length > 0) {
-      const stats = new Map<string, { points: number; wins: number; played: number }>()
-      for (const m of leagueMatches) {
-        if (!stats.has(m.player_a_id)) stats.set(m.player_a_id, { points: 0, wins: 0, played: 0 })
-        if (!stats.has(m.player_b_id)) stats.set(m.player_b_id, { points: 0, wins: 0, played: 0 })
-        if ((m.status === 'validated' || m.status === 'admin_resolved') && m.winner_id) {
-          const a = stats.get(m.player_a_id)!
-          const b = stats.get(m.player_b_id)!
-          a.played++; b.played++
-          if (m.winner_id === m.player_a_id) { a.wins++; a.points += 2 }
-          else { b.wins++; b.points += 2 }
-        }
-      }
-      const sorted = Array.from(stats.entries())
-        .map(([sid, s]) => ({
-          id: sid,
-          points: s.points,
-          wins: s.wins,
-          winrate: s.played > 0 ? s.wins / s.played : 0,
-        }))
-        .sort((x, y) =>
-          y.points - x.points ||
-          y.wins - x.wins ||
-          y.winrate - x.winrate ||
-          x.id.localeCompare(y.id)
-        )
-      const idx = sorted.findIndex((s) => s.id === profile.id)
-      if (idx >= 0) {
-        leagueRank = { rank: idx + 1, total: sorted.length, title: activeLeagueRes.data.title }
-      }
-    }
+  let globalRank: GlobalRank | null = null
+  if (leaderboardRes.data && leaderboardRes.data.length > 0) {
+    const sorted = leaderboardRes.data.slice().sort((a, b) =>
+      (b.total_points ?? 0) - (a.total_points ?? 0) ||
+      (b.total_wins ?? 0) - (a.total_wins ?? 0) ||
+      Number(b.winrate ?? 0) - Number(a.winrate ?? 0) ||
+      (a.username ?? '').localeCompare(b.username ?? '')
+    )
+    const idx = sorted.findIndex((e) => e.id === profile.id)
+    if (idx >= 0) globalRank = { rank: idx + 1, total: sorted.length }
   }
 
   let lastMatchData: LastMatchData | null = null
@@ -321,6 +292,9 @@ export default async function ProfilePage({ params }: { params: Promise<{ id: st
 
     lastMatchData = {
       matchId: lastWin.id,
+      winnerId: profile.id,
+      winnerUsername: profile.username,
+      winnerAvatarUrl: profile.avatar_url,
       opponentId,
       opponentUsername: oppRes.data?.username ?? 'Desconocido',
       opponentAvatarUrl: oppRes.data?.avatar_url ?? null,
@@ -356,14 +330,16 @@ export default async function ProfilePage({ params }: { params: Promise<{ id: st
                     initialWipes={profile.wipes}
                     canEdit={canEdit}
                   />
-                  {profile.mvp ? (
-                    <MvpPodium
-                      species={profile.mvp}
-                      nickname={profile.team.find(e => e.species === profile.mvp)?.nickname ?? ''}
-                    />
-                  ) : (
-                    <MvpPodiumEmpty />
-                  )}
+                  <div className="tc-flex-grow-panel">
+                    {profile.mvp ? (
+                      <MvpPodium
+                        species={profile.mvp}
+                        nickname={profile.team.find(e => e.species === profile.mvp)?.nickname ?? ''}
+                      />
+                    ) : (
+                      <MvpPodiumEmpty />
+                    )}
+                  </div>
                 </div>
 
                 {/* CENTER COLUMN */}
@@ -373,7 +349,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ id: st
                     stats={stats}
                     canEdit={canEdit}
                     isOwnProfile={isOwnProfile}
-                    leagueRank={leagueRank}
+                    globalRank={globalRank}
                   />
                   <StatGauges stats={stats} />
                   {(profile.graveyard ?? []).length > 0 && (
@@ -403,12 +379,19 @@ export default async function ProfilePage({ params }: { params: Promise<{ id: st
                 <LastMatchPanel data={lastMatchData} />
               </div>
 
-              {/* SYNC ROW — Save Sync flanked by legendaries (owner only) */}
+              {/* SYNC ROW — Save Sync (owner only) */}
               {isOwnProfile && (
                 <div className="tc-sync-row">
-                  <LegendaryAside species="kyogre" align="left" />
+                  <RunVitalsWing
+                    badges={profile.badges}
+                    deaths={profile.deaths}
+                    teamSize={profile.team?.length ?? 0}
+                  />
                   <SaveSyncPanel profileId={id} profile={profile} />
-                  <LegendaryAside species="groudon" align="right" />
+                  <SysLinkWing
+                    syncedAt={profile.save_synced_at ?? null}
+                    status={profile.save_sync_status ?? 'never'}
+                  />
                 </div>
               )}
             </div>
